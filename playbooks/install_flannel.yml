@@ -1,0 +1,13 @@
+---
+- name: Install Flannel CNI
+  hosts: kubernetes
+  become: true
+  tasks:
+    - name: Copy Flannel manifest to the node
+      copy:
+        src: ./kube-flannel.yml
+        dest: /root/kube-flannel.yml
+
+    - name: Apply Flannel manifest
+      command: kubectl apply -f /root/kube-flannel.yml
+
