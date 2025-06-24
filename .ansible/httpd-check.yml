@@ -1,0 +1,6 @@
+---
+- name: deploy apache
+  hosts: local
+  become: true
+  roles:
+    - geerlingguy.apache
