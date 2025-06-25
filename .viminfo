@@ -29,61 +29,81 @@
 
 # Registers:
 ""1	LINE	0
-	---
-|3,1,1,1,1,0,1750808637,"---"
+	*.retry
+|3,1,1,1,1,0,1750810150,"*.retry"
 "2	LINE	0
-	- name: Install Apache
-|3,0,2,1,1,0,1750808636,"- name: Install Apache"
+	Thumbs.db
+|3,0,2,1,1,0,1750810150,"Thumbs.db"
 "3	LINE	0
-	  yum:
-|3,0,3,1,1,0,1750808636,"  yum:"
+	.DS_Store
+|3,0,3,1,1,0,1750810149,".DS_Store"
 "4	LINE	0
-	    name: httpd
-|3,0,4,1,1,0,1750808635,"    name: httpd"
+	.eggs/
+|3,0,4,1,1,0,1750810149,".eggs/"
 "5	LINE	0
-	    state: present
-|3,0,5,1,1,0,1750808635,"    state: present"
+	*.egg-info/
+|3,0,5,1,1,0,1750810149,"*.egg-info/"
 "6	LINE	0
-	
-|3,0,6,1,1,0,1750808635,""
+	npm-debug.log*
+|3,0,6,1,1,0,1750810148,"npm-debug.log*"
 "7	LINE	0
-	- name: Start and enable Apache
-|3,0,7,1,1,0,1750808634,"- name: Start and enable Apache"
+	node_modules/
+|3,0,7,1,1,0,1750810148,"node_modules/"
 "8	LINE	0
-	  systemd:
-|3,0,8,1,1,0,1750808634,"  systemd:"
+	*.pyc
+|3,0,8,1,1,0,1750810147,"*.pyc"
 "9	LINE	0
-	    name: httpd
-|3,0,9,1,1,0,1750808634,"    name: httpd"
+	__pycache__/
+|3,0,9,1,1,0,1750810147,"__pycache__/"
 "-	CHAR	0
 	3
 |3,0,36,0,1,0,1750466975,"3"
 
 # File marks:
-'0  12  0  ~/roles/apache/tasks/main.yml
-|4,48,12,0,1750808641,"~/roles/apache/tasks/main.yml"
-'1  5  0  ~/ansible.cfg
-|4,49,5,0,1750808581,"~/ansible.cfg"
-'2  5  0  ~/ansible.cfg
-|4,50,5,0,1750808522,"~/ansible.cfg"
-'3  7  0  ~/playbooks/apache.yml
-|4,51,7,0,1750808410,"~/playbooks/apache.yml"
-'4  1  0  ~/roles/apache/tasks/main.yml
-|4,52,1,0,1750808382,"~/roles/apache/tasks/main.yml"
-'5  12  0  ~/roles/apache/tasks/main.yml
-|4,53,12,0,1750808382,"~/roles/apache/tasks/main.yml"
-'6  13  0  ~/install_flannel.yml
-|4,54,13,0,1750734303,"~/install_flannel.yml"
-'7  30  0  ~/init_master.yml
-|4,55,30,0,1750734222,"~/init_master.yml"
-'8  1  0  ~/init_master.yml
-|4,56,1,0,1750734126,"~/init_master.yml"
-'9  37  0  ~/init_master.yml
-|4,57,37,0,1750734126,"~/init_master.yml"
+'0  1  0  ~/.gitignore
+|4,48,1,0,1750810178,"~/.gitignore"
+'1  21  0  ~/.gitignore
+|4,49,21,0,1750810153,"~/.gitignore"
+'2  21  0  ~/.gitignore
+|4,50,21,0,1750810153,"~/.gitignore"
+'3  12  0  ~/roles/apache/tasks/main.yml
+|4,51,12,0,1750808641,"~/roles/apache/tasks/main.yml"
+'4  5  0  ~/ansible.cfg
+|4,52,5,0,1750808581,"~/ansible.cfg"
+'5  5  0  ~/ansible.cfg
+|4,53,5,0,1750808522,"~/ansible.cfg"
+'6  7  0  ~/playbooks/apache.yml
+|4,54,7,0,1750808410,"~/playbooks/apache.yml"
+'7  1  0  ~/roles/apache/tasks/main.yml
+|4,55,1,0,1750808382,"~/roles/apache/tasks/main.yml"
+'8  12  0  ~/roles/apache/tasks/main.yml
+|4,56,12,0,1750808382,"~/roles/apache/tasks/main.yml"
+'9  13  0  ~/install_flannel.yml
+|4,57,13,0,1750734303,"~/install_flannel.yml"
 
 # Jumplist (newest first):
+-'  1  0  ~/.gitignore
+|4,39,1,0,1750810178,"~/.gitignore"
+-'  21  0  ~/.gitignore
+|4,39,21,0,1750810153,"~/.gitignore"
+-'  21  0  ~/.gitignore
+|4,39,21,0,1750810153,"~/.gitignore"
+-'  1  0  ~/.gitignore
+|4,39,1,0,1750810143,"~/.gitignore"
 -'  12  0  ~/roles/apache/tasks/main.yml
 |4,39,12,0,1750808641,"~/roles/apache/tasks/main.yml"
+-'  12  0  ~/roles/apache/tasks/main.yml
+|4,39,12,0,1750808641,"~/roles/apache/tasks/main.yml"
+-'  12  0  ~/roles/apache/tasks/main.yml
+|4,39,12,0,1750808641,"~/roles/apache/tasks/main.yml"
+-'  12  0  ~/roles/apache/tasks/main.yml
+|4,39,12,0,1750808641,"~/roles/apache/tasks/main.yml"
+-'  1  0  ~/roles/apache/tasks/main.yml
+|4,39,1,0,1750808628,"~/roles/apache/tasks/main.yml"
+-'  1  0  ~/roles/apache/tasks/main.yml
+|4,39,1,0,1750808628,"~/roles/apache/tasks/main.yml"
+-'  1  0  ~/roles/apache/tasks/main.yml
+|4,39,1,0,1750808628,"~/roles/apache/tasks/main.yml"
 -'  1  0  ~/roles/apache/tasks/main.yml
 |4,39,1,0,1750808628,"~/roles/apache/tasks/main.yml"
 -'  5  0  ~/ansible.cfg
@@ -91,6 +111,30 @@
 -'  5  0  ~/ansible.cfg
 |4,39,5,0,1750808581,"~/ansible.cfg"
 -'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808581,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
+|4,39,5,0,1750808522,"~/ansible.cfg"
+-'  5  0  ~/ansible.cfg
 |4,39,5,0,1750808522,"~/ansible.cfg"
 -'  5  0  ~/ansible.cfg
 |4,39,5,0,1750808522,"~/ansible.cfg"
@@ -102,6 +146,78 @@
 |4,39,1,0,1750808494,"~/ansible.cfg"
 -'  1  0  ~/ansible.cfg
 |4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  1  0  ~/ansible.cfg
+|4,39,1,0,1750808494,"~/ansible.cfg"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
+-'  7  0  ~/playbooks/apache.yml
+|4,39,7,0,1750808410,"~/playbooks/apache.yml"
 -'  7  0  ~/playbooks/apache.yml
 |4,39,7,0,1750808410,"~/playbooks/apache.yml"
 -'  7  0  ~/playbooks/apache.yml
@@ -134,156 +250,48 @@
 |4,39,1,0,1750808400,"~/playbooks/apache.yml"
 -'  1  0  ~/playbooks/apache.yml
 |4,39,1,0,1750808400,"~/playbooks/apache.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  12  0  ~/roles/apache/tasks/main.yml
-|4,39,12,0,1750808382,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  1  0  ~/roles/apache/tasks/main.yml
-|4,39,1,0,1750808373,"~/roles/apache/tasks/main.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  13  0  ~/install_flannel.yml
-|4,39,13,0,1750734303,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
--'  1  0  ~/install_flannel.yml
-|4,39,1,0,1750734295,"~/install_flannel.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
+-'  1  0  ~/playbooks/apache.yml
+|4,39,1,0,1750808400,"~/playbooks/apache.yml"
 
 # History of marks within files (newest to oldest):
+
+> ~/.gitignore
+	*	1750810177	0
+	"	1	0
+	^	21	0
+	.	20	8
+	+	1	51
+	+	20	8
 
 > ~/roles/apache/tasks/main.yml
 	*	1750808641	0
@@ -458,10 +466,3 @@
 	^	5	11
 	.	5	10
 	+	5	10
-
-> ~/.ssh/short-term-host.yml
-	*	1740694894	0
-	"	2	40
-	^	28	80
-	.	28	77
-	+	28	77
