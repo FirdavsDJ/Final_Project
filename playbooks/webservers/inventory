@@ -1,0 +1,6 @@
+[web1]
+192.168.86.12 ansible_user=root ansible_ssh_private_key_file=/root/.ssh/web.pem
+[web2]
+192.168.86.13 ansible_user=root ansible_ssh_private_key_file=/root/.ssh/web.pem
+[web3]
+192.168.86.14 ansible_user=root ansible_ssh_private_key_file=/root/.ssh/web.pem

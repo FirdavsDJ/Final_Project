@@ -1,0 +1,41 @@
+[db]
+db01 ansible_host=192.168.86.11
+
+[webservers]
+web01 ansible_host=192.168.86.12
+web02 ansible_host=192.168.86.13
+
+[haproxy]
+haproxy01 ansible_host=192.168.86.15
+
+[nagios]
+nagios01 ansible_host=192.168.86.16
+
+[ansible]
+ansible01 ansible_host=192.168.86.17
+
+[docker_primary]
+docker-primary01 ansible_host=192.168.86.18
+
+[docker_workers]
+docker-worker01 ansible_host=192.168.86.19
+docker-worker02 ansible_host=192.168.86.20
+
+[kube_master]
+kube-master01 ansible_host=192.168.86.21
+
+[kube_workers]
+kube-worker01 ansible_host=192.168.86.23
+
+[dns]
+dns01 ansible_host=192.168.86.22
+
+# Optional: I added groupings for all Kubernetes nodes or all Docker nodes
+[kubernetes:children]
+kube_master
+kube_workers
+
+[docker:children]
+docker_primary
+docker_workers
+

@@ -1,0 +1,28 @@
+---
+- name: Create ansible user everywhere
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  vars:
+    ansible_user_name: ansible
+    ansible_password: "{{ 'password' | password_hash('sha512') }}"
+
+  tasks:
+    - name: Ensure ansible user exists
+      user:
+        name: "{{ ansible_user_name }}"
+        password: "{{ ansible_password }}"
+        groups: wheel
+        append: yes
+        shell: /bin/bash
+        state: present
+
+    - name: Allow ansible user passwordless sudo (optional)
+      lineinfile:
+        path: /etc/sudoers.d/ansible
+        create: yes
+        state: present
+        line: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL"
+        mode: "0440"
+

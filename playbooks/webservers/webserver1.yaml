@@ -1,0 +1,90 @@
+---
+- name: Setup Apache HTTPD Web Server
+  hosts: web1
+  become: true
+  vars:
+    packages:
+      - httpd
+      - net-tools
+      - wget  
+  tasks:
+
+    - name: Install packages for setup apache
+      dnf:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Ensure httpd service is started and enabled
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+
+    - name: Open firewall for HTTP (port 80)
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+
+    - name: Open firewall for HTTPS (port 443)
+      firewalld:
+        port: 443/tcp
+        permanent: true
+        state: enabled
+
+    - name: Reload the firewall
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Create beautiful custom index.html
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <title>Welcome to Team3's Web Server</title>
+              <style>
+                  body {
+                      background: linear-gradient(to right, #2c3e50, #3498db);
+                      color: white;
+                      font-family: Arial, sans-serif;
+                      text-align: center;
+                      padding-top: 100px;
+                  }
+                  h1 {
+                      font-size: 48px;
+                      margin-bottom: 10px;
+                  }
+                  p {
+                      font-size: 20px;
+                  }
+                  .footer {
+                      margin-top: 50px;
+                      font-size: 14px;
+                      color: #ccc;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>Welcome to Team3's Web Server!</h1>
+              <p>This server is proudly managed using Ansible automation.</p>
+              <p><strong>Server Role:</strong> Apache Web Hosting</p>
+              <p><strong>Team:</strong> Team3 DevOps</p>
+              <div class="footer">© 2025 Team3 DevOps. All rights reserved.</div>
+          </body>
+          </html>
+        owner: apache
+        group: apache
+        mode: '0644'
+
+    - name: Allow HTTP traffic in firewall (optional)
+      ansible.builtin.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+      when: ansible_facts['os_family'] == "RedHat"
+

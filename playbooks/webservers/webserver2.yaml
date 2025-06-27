@@ -1,0 +1,122 @@
+---
+- name: Setup Apache HTTPD Web Server
+  hosts: web2
+  become: true
+  vars:
+    packages:
+      - httpd
+      - net-tools
+      - wget  
+  tasks:
+  
+    - name: Install packages for setup apache
+      dnf:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Ensure httpd service is started and enabled
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+    - name: Open firewall for HTTP (port 80)
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+          # tags: firewall
+ 
+    - name: Open firewall for HTTPS (port 443)
+      firewalld:
+        port: 443/tcp
+        permanent: true
+        state: enabled
+          # tags: firewall
+ 
+    - name: Reload the firewall
+      service:
+        name: firewalld
+        state: reloaded
+          # tags: firewall
+    - name: Create beautiful custom index.html
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Team3 Web Server</title>
+              <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+              <style>
+                  body {
+                      margin: 0;
+                      font-family: 'Roboto', sans-serif;
+                      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+                      color: #fff;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      justify-content: center;
+                      min-height: 100vh;
+                      text-align: center;
+                  }
+                  h1 {
+                      font-size: 3rem;
+                      margin-bottom: 0.5em;
+                      animation: fadeInDown 1s ease-in-out;
+                  }
+                  p {
+                      font-size: 1.2rem;
+                      margin-bottom: 1em;
+                      animation: fadeInUp 1.2s ease-in-out;
+                  }
+                  .card {
+                      background-color: rgba(255, 255, 255, 0.1);
+                      padding: 2em;
+                      border-radius: 10px;
+                      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                      max-width: 600px;
+                      margin-top: 2em;
+                  }
+                  .footer {
+                      margin-top: 3em;
+                      font-size: 0.9rem;
+                      color: #ccc;
+                  }
+                  @keyframes fadeInDown {
+                      from { opacity: 0; transform: translateY(-20px); }
+                      to { opacity: 1; transform: translateY(0); }
+                  }
+                  @keyframes fadeInUp {
+                      from { opacity: 0; transform: translateY(20px); }
+                      to { opacity: 1; transform: translateY(0); }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="card">
+                  <h1>Welcome to Team3!</h1>
+                  <p>This web server is deployed and managed using <strong>Ansible</strong>.</p>
+                  <p><strong>Hosted on:</strong> Apache HTTP Server</p>
+                  <p><strong>Powered by:</strong> DevOps Excellence 🚀</p>
+              </div>
+              <div class="footer">
+                  &copy; 2025 Team3. Crafted with care and code.
+              </div>
+          </body>
+          </html>
+        owner: apache
+        group: apache
+        mode: '0644'
+
+    - name: Allow HTTP traffic in firewall (optional)
+      ansible.builtin.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+      when: ansible_facts['os_family'] == "RedHat"
+
+ 
