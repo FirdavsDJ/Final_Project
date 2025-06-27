@@ -6,6 +6,7 @@ if [ -f ~/.bashrc ]; then
 fi
 
 # User specific environment and startup programs
+<<<<<<< HEAD
 PATH=$PATH:$HOME/bin:/root
 export PATH
 
@@ -25,3 +26,5 @@ else
 fi
 alias reload="source .bash_profile"
 echo profile refreshed
+=======
+>>>>>>> master

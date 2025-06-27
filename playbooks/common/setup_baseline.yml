@@ -1,0 +1,41 @@
+---
+- name: Baseline security and install required packages
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure common packages are installed
+      package:
+        name:
+          - bind-utils
+          - man
+          - man-pages
+          - mlocate
+          - sysstat
+        state: present
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+        backup: yes
+      notify: Restart sshd
+
+    - name: Ensure firewalld is enabled and started
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Disable SELinux
+      selinux:
+        state: disabled
+
+  handlers:
+    - name: Restart sshd
+      service:
+        name: sshd
+        state: restarted
+
