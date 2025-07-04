@@ -1,0 +1,27 @@
+name: Ansible Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Run Ansible Playbooks on Controller
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.ANSIBLE_HOST }}
+          username: ${{ secrets.ANSIBLE_USER }}
+          key: ${{ secrets.ANSIBLE_SSH_KEY }}
+          script: |
+            cd /home/ansible/playbooks
+            ansible-playbook -i ~/inventories/production init_swarm.yml
+            ansible-playbook -i ~/inventories/production join_swarm_workers.yml
+            ansible-playbook -i ~/inventories/production deploy_nginx_service.yml
+Z
