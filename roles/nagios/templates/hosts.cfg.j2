@@ -1,0 +1,21 @@
+define host {
+  use         linux-server
+  host_name   web01
+  alias       Web Server 01
+  address     192.168.86.12
+}
+
+define host {
+  use         linux-server
+  host_name   db01
+  alias       MariaDB Server
+  address     192.168.86.11
+}
+
+define host {
+  use         linux-server
+  host_name   localhost
+  alias       Localhost Test
+  address     127.0.0.1
+}
+

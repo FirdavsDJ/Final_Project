@@ -1,0 +1,36 @@
+---
+- name: Setup Nagios monitoring
+  hosts: nagios
+  become: true
+
+  tasks:
+    - name: Install Nagios dependencies
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - httpd
+        - php
+        - gcc
+        - glibc
+        - glibc-common
+        - gd
+        - gd-devel
+        - make
+        - net-snmp
+        - unzip
+        - wget
+        - perl
+
+    - name: Copy Nagios config files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - { src: 'hosts.cfg.j2', dest: '/usr/local/nagios/etc/objects/hosts.cfg' }
+        - { src: 'services.cfg.j2', dest: '/usr/local/nagios/etc/objects/services.cfg' }
+        - { src: 'commands.cfg.j2', dest: '/usr/local/nagios/etc/objects/commands.cfg' }
+

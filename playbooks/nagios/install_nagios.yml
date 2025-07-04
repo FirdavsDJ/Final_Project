@@ -1,0 +1,107 @@
+---
+- name: Install and configure Nagios Core from source
+  hosts: nagios
+  become: true
+
+  tasks:
+    - name: Install required packages
+      yum:
+        name:
+          - httpd
+          - php
+          - gcc
+          - glibc
+          - glibc-common
+          - gd
+          - gd-devel
+          - make
+          - net-snmp
+          - unzip
+          - wget
+          - perl
+          - firewalld
+          - openssl-devel
+        state: present
+
+    - name: Ensure firewalld is running
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Create Nagios source directory
+      file:
+        path: /opt/nagios
+        state: directory
+        mode: '0755'
+
+    - name: Download Nagios Core
+      get_url:
+        url: https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.14.tar.gz
+        dest: /opt/nagios/nagios.tar.gz
+
+    - name: Extract Nagios Core
+      unarchive:
+        src: /opt/nagios/nagios.tar.gz
+        dest: /opt/nagios/
+        remote_src: yes
+
+    - name: Create Nagios user and group
+      block:
+        - group:
+            name: nagios
+            state: present
+        - user:
+            name: nagios
+            group: nagios
+            create_home: no
+            shell: /sbin/nologin
+
+    - name: Compile and install Nagios Core
+      shell: |
+        cd /opt/nagios/nagios-4.4.14
+        ./configure --with-httpd-conf=/etc/httpd/conf.d
+        make all
+        make install
+        make install-init
+        make install-commandmode
+        make install-config
+        make install-webconf
+      args:
+        creates: /usr/local/nagios/bin/nagios
+
+    - name: Create nagiosadmin web user
+      shell: htpasswd -bc /usr/local/nagios/etc/htpasswd.users nagiosadmin NagiosAdmin123
+      args:
+        creates: /usr/local/nagios/etc/htpasswd.users
+
+    - name: Allow HTTP through firewalld
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: yes
+
+    - name: Copy custom Nagios object config files
+      copy:
+        src: "../files/{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: "hosts.cfg.j2", dest: "/usr/local/nagios/etc/objects/hosts.cfg" }
+        - { src: "services.cfg.j2", dest: "/usr/local/nagios/etc/objects/services.cfg" }
+        - { src: "commands.cfg.j2", dest: "/usr/local/nagios/etc/objects/commands.cfg" }
+
+    - name: Validate Nagios configuration
+      command: /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+      register: nagios_check
+      failed_when: "'Total Errors:   0' not in nagios_check.stdout"
+
+    - name: Enable and start Apache and Nagios services
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - httpd
+        - nagios
+

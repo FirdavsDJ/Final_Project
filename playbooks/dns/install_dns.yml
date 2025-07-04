@@ -1,0 +1,70 @@
+- name: Install and configure DNS server (Bind9)
+  hosts: dns
+  become: true
+
+  tasks:
+    - name: Install Bind9 packages
+      yum:
+        name:
+          - bind
+          - bind-utils
+        state: present
+
+    - name: Enable and start named service
+      systemd:
+        name: named
+        state: started
+        enabled: true
+
+    - name: Copy named.conf
+      copy:
+        dest: /etc/named.conf
+        content: |
+          options {
+              listen-on port 53 { any; };
+              directory "/var/named";
+              dump-file "/var/named/data/cache_dump.db";
+              statistics-file "/var/named/data/named_stats.txt";
+              memstatistics-file "/var/named/data/named_mem_stats.txt";
+              allow-query { any; };
+              recursion yes;
+              dnssec-enable no;
+              dnssec-validation no;
+          };
+
+          zone "ziyotek3.local" IN {
+              type master;
+              file "ziyotek3.local.db";
+              allow-update { none; };
+          };
+
+    - name: Create forward zone file
+      copy:
+        dest: /var/named/ziyotek3.local.db
+        content: |
+          $TTL 86400
+          @   IN  SOA dns01. admin.ziyotek3.local. (
+                  2025070301 ; Serial
+                  3600       ; Refresh
+                  1800       ; Retry
+                  604800     ; Expire
+                  86400 )    ; Minimum TTL
+
+              IN  NS  dns01.
+
+          dns01      IN A 192.168.86.22
+          web01      IN A 192.168.86.12
+          web02      IN A 192.168.86.13
+          web03      IN A 192.168.86.14
+          db01       IN A 192.168.86.11
+          haproxy01  IN A 192.168.86.15
+          ansible01  IN A 192.168.86.17
+
+    - name: Restore SELinux contexts
+      command: restorecon -Rv /var/named
+
+    - name: Restart DNS
+      systemd:
+        name: named
+        state: restarted
+

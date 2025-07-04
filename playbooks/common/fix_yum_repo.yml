@@ -1,0 +1,21 @@
+- name: Fix Rocky Linux 9 yum repo URLs
+  hosts: haproxy
+  become: true
+  tasks:
+    - name: Replace BaseOS repo with working baseurl
+      copy:
+        dest: /etc/yum.repos.d/rocky-base.repo
+        content: |
+          [baseos]
+          name=Rocky Linux $releasever - BaseOS
+          baseurl=https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/
+          enabled=1
+          gpgcheck=1
+          gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+
+          [appstream]
+          name=Rocky Linux $releasever - AppStream
+          baseurl=https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/
+          enabled=1
+          gpgcheck=1
+          gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial

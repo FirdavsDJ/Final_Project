@@ -1,0 +1,13 @@
+- hosts: docker_workers
+  become: true
+  tasks:
+    - name: Ensure Docker service is started
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Join swarm as worker
+      shell: docker swarm join --token SWMTKN-1-60cxxy4bec233w5gz6kc1j8kc0n1bi301y1vg9gnc9isml7kw2-al6p2itr14e5nwclbb7lmzygv 192.168.86.18:2377
+      when: "'docker_primary' in group_names"
+

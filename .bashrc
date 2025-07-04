@@ -16,12 +16,10 @@ export PATH
 # export SYSTEMD_PAGER=
 
 # User specific aliases and functions
-<<<<<<< HEAD
- 
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
-=======
+
 if [ -d ~/.bashrc.d ]; then
 	for rc in ~/.bashrc.d/*; do
 		if [ -f "$rc" ]; then
@@ -30,5 +28,3 @@ if [ -d ~/.bashrc.d ]; then
 	done
 fi
 
-unset rc
->>>>>>> master

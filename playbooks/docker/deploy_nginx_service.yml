@@ -1,0 +1,13 @@
+---
+- name: Deploy nginx service on Docker Swarm
+  hosts: docker_primary
+  become: true
+  tasks:
+    - name: Deploy nginx service with 3 replicas
+      command: >
+        docker service create
+        --name nginx-swarm
+        --replicas 3
+        --publish published=80,target=80
+        nginx
+

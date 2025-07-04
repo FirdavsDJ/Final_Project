@@ -1,0 +1,40 @@
+---
+- name: Install NRPE and essential Nagios plugins
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install EPEL repo (required on RHEL/CentOS)
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Install NRPE and core Nagios plugins
+      yum:
+        name:
+          - nrpe
+          - nagios-plugins-load
+          - nagios-plugins-disk
+          - nagios-plugins-procs
+          - nagios-plugins-users
+          - nagios-plugins-swap
+        state: present
+
+    - name: Ensure NRPE is enabled and running
+      systemd:
+        name: nrpe
+        state: started
+        enabled: true
+
+    - name: Allow Nagios server to connect to NRPE
+      lineinfile:
+        path: /etc/nagios/nrpe.cfg
+        regexp: '^allowed_hosts='
+        line: 'allowed_hosts=127.0.0.1,192.168.86.16'
+        state: present
+
+    - name: Restart NRPE after config change
+      systemd:
+        name: nrpe
+        state: restarted
+

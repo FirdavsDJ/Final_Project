@@ -1,72 +1,52 @@
+# Database
 [db]
-<<<<<<< HEAD
-192.168.86.11
-
-[webservers]
-192.168.86.12
-192.168.86.13
-192.168.86.14
-
-[haproxy]
-192.168.86.15
-
-[nagios]
-192.168.86.16
-
-[ansible]
-192.168.86.17
-
-[docker_primary]
-192.168.86.18
-
-[docker_workers]
-192.168.86.19
-192.168.86.20
-
-[kubernetes]
-192.168.86.21
-
-[dns]
-192.168.86.22
-=======
 db01 ansible_host=192.168.86.11
 
+# Web Servers
 [webservers]
 web01 ansible_host=192.168.86.12
 web02 ansible_host=192.168.86.13
+web03 ansible_host=192.168.86.14
 
+# HAProxy
 [haproxy]
 haproxy01 ansible_host=192.168.86.15
 
+# Nagios
 [nagios]
 nagios01 ansible_host=192.168.86.16
 
+# Ansible Controller
 [ansible]
 ansible01 ansible_host=192.168.86.17
 
+# Docker Primary Node
 [docker_primary]
 docker-primary01 ansible_host=192.168.86.18
 
+# Docker Worker Nodes
 [docker_workers]
 docker-worker01 ansible_host=192.168.86.19
 docker-worker02 ansible_host=192.168.86.20
 
+# Kubernetes Master
 [kube_master]
 kube-master01 ansible_host=192.168.86.21
 
-[kube_workers]
+# Kubernetes Workers
+[kube_worker]
 kube-worker01 ansible_host=192.168.86.23
 
+# DNS
 [dns]
 dns01 ansible_host=192.168.86.22
 
-# Optional: I added groupings for all Kubernetes nodes or all Docker nodes
+# Groupings (children)
 [kubernetes:children]
 kube_master
-kube_workers
+kube_worker
 
 [docker:children]
 docker_primary
 docker_workers
 
->>>>>>> master

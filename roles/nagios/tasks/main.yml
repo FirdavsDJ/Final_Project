@@ -1,0 +1,32 @@
+---
+- name: Install Nagios dependencies
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - httpd
+    - php
+    - gcc
+    - glibc
+    - glibc-common
+    - gd
+    - gd-devel
+    - make
+    - net-snmp
+    - unzip
+    - wget
+    - perl
+
+- name: Copy Nagios config files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - { src: 'hosts.cfg.j2', dest: '/usr/local/nagios/etc/objects/hosts.cfg' }
+    - { src: 'services.cfg.j2', dest: '/usr/local/nagios/etc/objects/services.cfg' }
+    - { src: 'commands.cfg.j2', dest: '/usr/local/nagios/etc/objects/commands.cfg' }
+
+- name: Restart Nagios
+  service:
+    name: nagios
+    state: restarted

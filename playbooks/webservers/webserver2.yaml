@@ -1,6 +1,6 @@
 ---
 - name: Setup Apache HTTPD Web Server
-  hosts: web2
+  hosts: web02
   become: true
   vars:
     packages:

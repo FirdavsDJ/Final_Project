@@ -1,14 +1,64 @@
-- name: Install MariaDB on DB Server
+---
+- name: Install and configure MariaDB
   hosts: db
   become: true
+
   tasks:
-    - name: Install MariaDB
+    - name: Install MariaDB server
       yum:
         name: mariadb-server
         state: present
 
-    - name: Start and enable MariaDB service
-      service:
+    - name: Start and enable mariadb
+      systemd:
         name: mariadb
-        state: started
         enabled: true
+        state: started
+
+    - name: Set root password (Optional — use only if it's a new install)
+      mysql_user:
+        name: root
+        host_all: true
+        password: "password"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        check_implicit_admin: true
+        state: present
+
+    - name: Remove test database (Optional)
+      mysql_db:
+        name: test
+        state: absent
+        login_user: root
+        login_password: "password"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+    - name: Create a custom DB (Optional)
+      mysql_db:
+        name: team3db
+        state: present
+        login_user: root
+        login_password: "password"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+    - name: Create a DB user and grant privileges
+      mysql_user:
+        name: team3user
+        host: localhost
+        password: "securepass"
+        priv: "team3db.*:ALL"
+        state: present
+        login_user: root
+        login_password: "password"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+    - name: Create sample_table in team3db
+      community.mysql.mysql_query:
+        login_user: team3user
+        login_password: securepass
+        login_db: team3db
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS sample_table (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
