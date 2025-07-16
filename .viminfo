@@ -11,11 +11,11 @@
 # hlsearch on (H) or off (h):
 ~H
 # Last Search Pattern:
-~MSle0~/\V\<define\>
+~MSle0~/\V\<name\>
 
 # Command Line History (newest to oldest):
 :q!
-|2,0,1751600985,,"q!"
+|2,0,1752630502,,"q!"
 :source ~/.vimrc
 |2,0,1729901818,,"source ~/.vimrc"
 
@@ -33,455 +33,792 @@
 
 # Registers:
 ""1	LINE	0
-	- hosts: docker_workers
+	---
+	- name: Create Ingress resource for echo app
+	  hosts: kube-master01
 	  become: true
 	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
+	    - name: Create echo ingress YAML manifest
+	      copy:
+	        dest: /home/ansible/echo-ingress.yaml
+	        content: |
+	          apiVersion: networking.k8s.io/v1
+	          kind: Ingress
+	          metadata:
+	            name: echo-ingress
+	            namespace: default
+	            annotations:
+	              nginx.ingress.kubernetes.io/rewrite-target: /
+	          spec:
+	            ingressClassName: nginx
+	            rules:
+	              - http:
+	                  paths:
+	                    - path: /
+	                      pathType: Prefix
+	                      backend:
+	                        service:
+	                          name: echo
+	                          port:
+	                            number: 80
 	
-	    - name: Join swarm as worker
-	      shell: >
-	    docker swarm join --token SWMTKN-1-2tofoyfa71tsuzeihomim8nw99vyogzmbnf15j7ctxn4c2v5jd-2etub4kns7ovf6k3178av1wov
-	    192.168.86.18:2377
-	      when: "'docker_primary' in group_names"
+	    - name: Apply echo ingress YAML with kubeconfig
+	      shell: KUBECONFIG=/home/ansible/admin.conf kubectl apply -f /home/ansible/echo-ingress.yaml
+	      register: result
+	      failed_when: result.rc != 0
+	      changed_when: "'created' in result.stdout"
 	
-|3,1,1,1,15,0,1751602813,"- hosts: docker_workers","  become: true","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: >","    docker swarm join --token SWMTKN-1-2tofoyfa71tsuzeihomim8nw99vyogzmbnf15j7ctxn4c2v5jd-2etub4kns7ovf6k3178av1wov","    192.168.86.18:2377","      when: \"'docker_primary' in group_names\"",>2
-|<""
+|3,1,1,1,35,0,1752705631,"---","- name: Create Ingress resource for echo app","  hosts: kube-master01","  become: true","  tasks:","    - name: Create echo ingress YAML manifest","      copy:","        dest: /home/ansible/echo-ingress.yaml","        content: |","          apiVersion: networking.k8s.io/v1","          kind: Ingress","          metadata:","            name: echo-ingress","            namespace: default","            annotations:",>61
+|<"              nginx.ingress.kubernetes.io/rewrite-target: /","          spec:","            ingressClassName: nginx","            rules:","              - http:","                  paths:","                    - path: /","                      pathType: Prefix","                      backend:","                        service:","                          name: echo","                          port:","                            number: 80","",>53
+|<"    - name: Apply echo ingress YAML with kubeconfig","      shell: KUBECONFIG=/home/ansible/admin.conf kubectl apply -f /home/ansible/echo-ingress.yaml","      register: result","      failed_when: result.rc != 0","      changed_when: \"'created' in result.stdout\"",""
 "2	LINE	0
-	- hosts: docker_workers
+	---
+	- name: Update HAProxy for Docker Services
+	  hosts: haproxy
 	  become: true
+	
+	  vars:
+	    haproxy_cfg: "/etc/haproxy/haproxy.cfg"
+	    docker_services:
+	      - name: phpmyadmin
+	        port: 8080
+	        backend_servers:
+	          - docker-primary01:8080
+	          - docker-worker01:8080
+	      - name: nginx-service
+	        port: 8081
+	        backend_servers:
+	          - docker-primary01:8081
+	          - docker-worker01:8081
+	
 	  tasks:
-	    - name: Ensure Docker service is started
+	    - name: Backup existing HAProxy config
+	      copy:
+	        src: "{{ haproxy_cfg }}"
+	        dest: "{{ haproxy_cfg }}.bak_{{ ansible_date_time.iso8601 }}"
+	
+	    - name: Create new HAProxy backend configuration for Docker services
+	      blockinfile:
+	        path: "{{ haproxy_cfg }}"
+	        marker: "# {mark} DOCKER SERVICES"
+	        block: |
+	          {% for svc in docker_services %}
+	          frontend {{ svc.name }}_frontend
+	              bind *:{{ svc.port }}
+	              default_backend {{ svc.name }}_backend
+	
+	          backend {{ svc.name }}_backend
+	              balance roundrobin
+	              {% for backend in svc.backend_servers %}
+	              server {{ backend.split(':')[0] }} {{ backend }} check
+	              {% endfor %}
+	          {% endfor %}
+	
+	    - name: Restart HAProxy
 	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
+	        name: haproxy
+	        state: restarted
 	
-	    - name: Join swarm as worker
-	      shell: docker swarm join-token worker -q
-	SWMTKN-1-2tofoyfa71tsuzeiho- hosts: docker_workers
-	  become: true
-	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
-	
-	    - name: Join swarm as worker
-	      shell: docker swarm join --token SWMTKN-1-2tofoyfa71tsuzeihomim8nw99vyogzmbnf15j7ctxn4c2v5jd-2etub4kns7ovf6k3178av1wov 192.168.86.18:2377
-	      when: "'docker_primary' in group_names"
-	ggd200
-	nim8nw99vyogzmbnfl5j7ctxn4c2v5jd-2etub4kns7ovf6k3l78av1wov
-	      when: hostvars[groups['docker_primary'][0]].worker_token is defined
-	
-|3,0,2,1,27,0,1751602326,"- hosts: docker_workers","  become: true","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: docker swarm join-token worker -q","SWMTKN-1-2tofoyfa71tsuzeiho- hosts: docker_workers","  become: true","  tasks:","    - name: Ensure Docker service is started","      service:",>22
-|<"        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: docker swarm join --token SWMTKN-1-2tofoyfa71tsuzeihomim8nw99vyogzmbnf15j7ctxn4c2v5jd-2etub4kns7ovf6k3178av1wov 192.168.86.18:2377","      when: \"'docker_primary' in group_names\"","ggd200","nim8nw99vyogzmbnfl5j7ctxn4c2v5jd-2etub4kns7ovf6k3l78av1wov","      when: hostvars[groups['docker_primary'][0]].worker_token is defined",""
+|3,0,2,1,47,0,1752700768,"---","- name: Update HAProxy for Docker Services","  hosts: haproxy","  become: true","","  vars:","    haproxy_cfg: \"/etc/haproxy/haproxy.cfg\"","    docker_services:","      - name: phpmyadmin","        port: 8080","        backend_servers:","          - docker-primary01:8080","          - docker-worker01:8080","      - name: nginx-service","        port: 8081","        backend_servers:","          - docker-primary01:8081",>34
+|<"          - docker-worker01:8081","","  tasks:","    - name: Backup existing HAProxy config","      copy:","        src: \"{{ haproxy_cfg }}\"","        dest: \"{{ haproxy_cfg }}.bak_{{ ansible_date_time.iso8601 }}\"","","    - name: Create new HAProxy backend configuration for Docker services","      blockinfile:","        path: \"{{ haproxy_cfg }}\"","        marker: \"# {mark} DOCKER SERVICES\"","        block: |","          {% for svc in docker_services %}",>44
+|<"          frontend {{ svc.name }}_frontend","              bind *:{{ svc.port }}","              default_backend {{ svc.name }}_backend","","          backend {{ svc.name }}_backend","              balance roundrobin","              {% for backend in svc.backend_servers %}","              server {{ backend.split(':')[0] }} {{ backend }} check","              {% endfor %}","          {% endfor %}","","    - name: Restart HAProxy","      service:","        name: haproxy",>26
+|<"        state: restarted",""
 "3	LINE	0
-	- name: Join worker nodes to Docker swarm
-	  hosts: docker_workers
-	  become: true
-	  gather_facts: yes
-	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
-	
-	    - name: Join swarm as worker
-	      shell: >
-	        docker swarm join
-	        --token {{ hostvars['docker-primary01'].worker_token }}
-	        {{ hostvars['docker-primary01'].ansible_host }}:2377
-	      when: hostvars['docker-primary01'].worker_token is defined
-	      register: join_result
-	      failed_when: "'already part of a swarm' not in join_result.stderr"
-	      changed_when: "'This node joined a swarm as a worker' in join_result.stdout"
-	
-|3,0,3,1,21,0,1751602151,"- name: Join worker nodes to Docker swarm","  hosts: docker_workers","  become: true","  gather_facts: yes","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: >","        docker swarm join","        --token {{ hostvars['docker-primary01'].worker_token }}",>62
-|<"        {{ hostvars['docker-primary01'].ansible_host }}:2377","      when: hostvars['docker-primary01'].worker_token is defined","      register: join_result","      failed_when: \"'already part of a swarm' not in join_result.stderr\"","      changed_when: \"'This node joined a swarm as a worker' in join_result.stdout\"",""
-"4	LINE	0
-	- name: Initialize Docker Swarm on manager node
+	---
+	- name: Distribute lab-app Docker image to all nodes
 	  hosts: docker_primary
 	  become: true
 	  tasks:
-	    - name: Initialize Docker swarm manager
-	      shell: docker swarm init --advertise-addr {{ ansible_host }}
-	      register: swarm_init
-	      failed_when: "'This node is already part of a swarm' not in swarm_init.stderr"
+	    - name: Save lab-app image as tar archive
+	      command: docker save -o /tmp/lab-app-image.tar lab-app-image:latest
 	
-	    - name: Get join token for workers
-	      shell: docker swarm join-token worker -q
-	      register: worker_token
-	      changed_when: false
+	    - name: Fetch image tarball to Ansible controller
+	      fetch:
+	        src: /tmp/lab-app-image.tar
+	        dest: /tmp/lab-app-image.tar
+	        flat: yes
 	
-	    - name: Set worker join token fact
-	      set_fact:
-	        worker_token: "{{ worker_token.stdout }}"
+	- name: Copy lab-app image to workers
+	  hosts: docker_workers
+	  become: true
+	  tasks:
+	    - name: Copy lab-app image tarball to worker
+	      copy:
+	        src: /tmp/lab-app-image.tar
+	        dest: /tmp/lab-app-image.tar
 	
-|3,0,4,1,18,0,1751602143,"- name: Initialize Docker Swarm on manager node","  hosts: docker_primary","  become: true","  tasks:","    - name: Initialize Docker swarm manager","      shell: docker swarm init --advertise-addr {{ ansible_host }}","      register: swarm_init","      failed_when: \"'This node is already part of a swarm' not in swarm_init.stderr\"","","    - name: Get join token for workers","      shell: docker swarm join-token worker -q",>30
-|<"      register: worker_token","      changed_when: false","","    - name: Set worker join token fact","      set_fact:","        worker_token: \"{{ worker_token.stdout }}\"",""
+	    - name: Load lab-app image on worker
+	      command: docker load -i /tmp/lab-app-image.tar
+	
+	- name: Deploy lab-app custom service on Docker Swarm
+	  hosts: docker_primary
+	  become: true
+	  vars:
+	    custom_app_name: lab-app-service
+	    custom_app_image: lab-app-image
+	    replicas: 3
+	    published_port: 8090
+	    overlay_network: my_overlay
+	  tasks:
+	    - name: Remove existing lab-app-service if present
+	      command: docker service rm {{ custom_app_name }}
+	      ignore_errors: true
+	
+	    - name: Deploy lab-app Swarm service with host-mode publishing
+	      command: >
+	        docker service create
+	        --name {{ custom_app_name }}
+	        --network {{ overlay_network }}
+	        --publish mode=host,target=80,published={{ published_port }}
+	        --replicas {{ replicas }}
+	        {{ custom_app_image }}
+	
+	    - name: Wait for service to stabilize
+|3,0,3,1,50,0,1752700352,"---","- name: Distribute lab-app Docker image to all nodes","  hosts: docker_primary","  become: true","  tasks:","    - name: Save lab-app image as tar archive","      command: docker save -o /tmp/lab-app-image.tar lab-app-image:latest","","    - name: Fetch image tarball to Ansible controller","      fetch:","        src: /tmp/lab-app-image.tar","        dest: /tmp/lab-app-image.tar","        flat: yes","",>39
+|<"- name: Copy lab-app image to workers","  hosts: docker_workers","  become: true","  tasks:","    - name: Copy lab-app image tarball to worker","      copy:","        src: /tmp/lab-app-image.tar","        dest: /tmp/lab-app-image.tar","","    - name: Load lab-app image on worker","      command: docker load -i /tmp/lab-app-image.tar","","- name: Deploy lab-app custom service on Docker Swarm","  hosts: docker_primary","  become: true","  vars:","    custom_app_name: lab-app-service",>37
+|<"    custom_app_image: lab-app-image","    replicas: 3","    published_port: 8090","    overlay_network: my_overlay","  tasks:","    - name: Remove existing lab-app-service if present","      command: docker service rm {{ custom_app_name }}","      ignore_errors: true","","    - name: Deploy lab-app Swarm service with host-mode publishing","      command: >","        docker service create","        --name {{ custom_app_name }}","        --network {{ overlay_network }}",>70
+|<"        --publish mode=host,target=80,published={{ published_port }}","        --replicas {{ replicas }}","        {{ custom_app_image }}","","    - name: Wait for service to stabilize"
+"4	LINE	0
+	---
+	- name: Distribute lab-app Docker image to all nodes
+	  hosts: docker_primary
+	  become: true
+	  tasks:
+	    - name: Save lab-app image as tar archive
+	      command: docker save -o /tmp/lab-app-image.tar lab-app-image:latest
+	
+	    - name: Fetch image tarball to Ansible controller
+	      fetch:
+	        src: /tmp/lab-app-image.tar
+	        dest: /tmp/lab-app-image.tar
+	        flat: yes
+	
+	- name: Copy lab-app image to workers
+	  hosts: docker_workers
+	  become: true
+	  tasks:
+	    - name: Copy lab-app image tarball to worker
+	      copy:
+	        src: /tmp/lab-app-image.tar
+	        dest: /tmp/lab-app-image.tar
+	
+	    - name: Load lab-app image on worker
+	      command: docker load -i /tmp/lab-app-image.tar
+	
+	- name: Deploy lab-app custom service on Docker Swarm
+	  hosts: docker_primary
+	  become: true
+	  vars:
+	    custom_app_name: lab-app-service
+	    custom_app_image: lab-app-image
+	    replicas: 3
+	    published_port: 8090
+	    overlay_network: my_overlay
+	  tasks:
+	    - name: Remove existing lab-app-service if present
+	      command: docker service rm {{ custom_app_name }}
+	      ignore_errors: true
+	
+	    - name: Deploy lab-app Swarm service with 3 replicas
+	      command: >
+	        docker service create
+	        --name {{ custom_app_name }}
+	        --network {{ overlay_network }}
+	        --publish {{ published_port }}:80
+	        --replicas {{ replicas }}
+	        {{ custom_app_image }}
+	
+	    - name: Wait for service to stabilize
+|3,0,4,1,50,0,1752699768,"---","- name: Distribute lab-app Docker image to all nodes","  hosts: docker_primary","  become: true","  tasks:","    - name: Save lab-app image as tar archive","      command: docker save -o /tmp/lab-app-image.tar lab-app-image:latest","","    - name: Fetch image tarball to Ansible controller","      fetch:","        src: /tmp/lab-app-image.tar","        dest: /tmp/lab-app-image.tar","        flat: yes","",>39
+|<"- name: Copy lab-app image to workers","  hosts: docker_workers","  become: true","  tasks:","    - name: Copy lab-app image tarball to worker","      copy:","        src: /tmp/lab-app-image.tar","        dest: /tmp/lab-app-image.tar","","    - name: Load lab-app image on worker","      command: docker load -i /tmp/lab-app-image.tar","","- name: Deploy lab-app custom service on Docker Swarm","  hosts: docker_primary","  become: true","  vars:","    custom_app_name: lab-app-service",>37
+|<"    custom_app_image: lab-app-image","    replicas: 3","    published_port: 8090","    overlay_network: my_overlay","  tasks:","    - name: Remove existing lab-app-service if present","      command: docker service rm {{ custom_app_name }}","      ignore_errors: true","","    - name: Deploy lab-app Swarm service with 3 replicas","      command: >","        docker service create","        --name {{ custom_app_name }}","        --network {{ overlay_network }}",>43
+|<"        --publish {{ published_port }}:80","        --replicas {{ replicas }}","        {{ custom_app_image }}","","    - name: Wait for service to stabilize"
 "5	LINE	0
 	---
-	- name: Join worker nodes to Docker swarm
-	  hosts: docker_workers
+	- name: Build custom lab-app Docker image
+	  hosts: docker_primary
 	  become: true
-	  gather_facts: yes
+	  vars:
+	    custom_image_name: lab-app-image
+	    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+	    build_dir: /tmp/lab-app
 	
 	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
+	    - name: Create build directory
+	      file:
+	        path: "{{ build_dir }}"
+	        state: directory
 	
-	    - name: Join swarm as worker
-	      shell: >
-	        docker swarm join
-	        --token {{ hostvars['docker-primary01'].worker_token }}
-	        {{ hostvars['docker-primary01'].ansible_host }}:2377
-	      when: hostvars['docker-primary01'].worker_token is defined
-	      register: join_result
-	      failed_when: "'already part of a swarm' not in join_result.stderr"
-	      changed_when: "'This node joined a swarm as a worker' in join_result.stdout"
+	    - name: Download lab-app.tgz
+	      get_url:
+	        url: "{{ app_download_url }}"
+	        dest: "{{ build_dir }}/lab-app.tgz"
 	
-|3,0,5,1,23,0,1751602064,"---","- name: Join worker nodes to Docker swarm","  hosts: docker_workers","  become: true","  gather_facts: yes","","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: >","        docker swarm join","        --token {{ hostvars['docker-primary01'].worker_token }}",>62
-|<"        {{ hostvars['docker-primary01'].ansible_host }}:2377","      when: hostvars['docker-primary01'].worker_token is defined","      register: join_result","      failed_when: \"'already part of a swarm' not in join_result.stderr\"","      changed_when: \"'This node joined a swarm as a worker' in join_result.stdout\"",""
+	    - name: Extract lab-app.tgz
+	      unarchive:
+	        src: "{{ build_dir }}/lab-app.tgz"
+	        dest: "{{ build_dir }}"
+	        remote_src: yes
+	
+	    - name: Create rds.conf.php with correct DB connection
+	      copy:
+	        dest: "{{ build_dir }}/rds.conf.php"
+	        content: |
+	          <?php
+	          $RDS_HOSTNAME = "mariadb-service";
+	          $RDS_PORT = "3306";
+	          $RDS_DB_NAME = "labdb";
+	          $RDS_USERNAME = "labuser";
+	          $RDS_PASSWORD = "labpass123";
+	          ?>
+	
+	    - name: Create Dockerfile with supervisord for Apache + PHP-FPM
+	      copy:
+	        dest: "{{ build_dir }}/Dockerfile"
+	        content: |
+	          FROM rockylinux:8
+	
+	          # Install Apache, PHP-FPM, MySQL extension, and supervisord
+	          RUN dnf install -y epel-release && \
+	              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common supervisor && \
+	              dnf clean all
+	
+	          # Make PHP-FPM listen on TCP instead of socket
+|3,0,5,1,50,0,1752699268,"---","- name: Build custom lab-app Docker image","  hosts: docker_primary","  become: true","  vars:","    custom_image_name: lab-app-image","    app_download_url: \"https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz\"","    build_dir: /tmp/lab-app","","  tasks:","    - name: Create build directory","      file:","        path: \"{{ build_dir }}\"","        state: directory","",>34
+|<"    - name: Download lab-app.tgz","      get_url:","        url: \"{{ app_download_url }}\"","        dest: \"{{ build_dir }}/lab-app.tgz\"","","    - name: Extract lab-app.tgz","      unarchive:","        src: \"{{ build_dir }}/lab-app.tgz\"","        dest: \"{{ build_dir }}\"","        remote_src: yes","","    - name: Create rds.conf.php with correct DB connection","      copy:","        dest: \"{{ build_dir }}/rds.conf.php\"","        content: |","          <?php",>48
+|<"          $RDS_HOSTNAME = \"mariadb-service\";","          $RDS_PORT = \"3306\";","          $RDS_DB_NAME = \"labdb\";","          $RDS_USERNAME = \"labuser\";","          $RDS_PASSWORD = \"labpass123\";","          ?>","","    - name: Create Dockerfile with supervisord for Apache + PHP-FPM","      copy:","        dest: \"{{ build_dir }}/Dockerfile\"","        content: |","          FROM rockylinux:8","","          # Install Apache, PHP-FPM, MySQL extension, and supervisord",>49
+|<"          RUN dnf install -y epel-release && \\","              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common supervisor && \\","              dnf clean all","","          # Make PHP-FPM listen on TCP instead of socket"
 "6	LINE	0
 	---
-	- name: Initialize Docker Swarm on manager node
+	- name: Build custom lab-app Docker image
 	  hosts: docker_primary
 	  become: true
-	  gather_facts: yes
+	  vars:
+	    custom_image_name: lab-app-image
+	    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+	    build_dir: /tmp/lab-app
 	
 	  tasks:
-	    - name: Initialize Docker swarm manager
-	      shell: docker swarm init --advertise-addr {{ ansible_host }}
-	      register: swarm_init
-	      failed_when: "'already part of a swarm' not in swarm_init.stderr"
-	      changed_when: "'This node is already part of a swarm' not in swarm_init.stderr"
+	    - name: Create build directory
+	      file:
+	        path: "{{ build_dir }}"
+	        state: directory
 	
-	    - name: Get join token for workers
-	      shell: docker swarm join-token worker -q
-	      register: worker_token
-	      when: "'This node is already part of a swarm' in swarm_init.stderr or swarm_init.changed"
-	      
-	    - name: Set worker join token fact
-	      set_fact:
-	        worker_token: "{{ worker_token.stdout }}"
-	      when: worker_token is defined
+	    - name: Download lab-app.tgz
+	      get_url:
+	        url: "{{ app_download_url }}"
+	        dest: "{{ build_dir }}/lab-app.tgz"
 	
-	    - name: Get join token for managers
-	      shell: docker swarm join-token manager -q
-	      register: manager_token
-	      when: "'This node is already part of a swarm' in swarm_init.stderr or swarm_init.changed"
+	    - name: Extract lab-app.tgz
+	      unarchive:
+	        src: "{{ build_dir }}/lab-app.tgz"
+	        dest: "{{ build_dir }}"
+	        remote_src: yes
 	
-	    - name: Set manager join token fact
-	      set_fact:
-	        manager_token: "{{ manager_token.stdout }}"
-	      when: manager_token is defined
+	    - name: Create rds.conf.php with correct DB connection
+	      copy:
+	        dest: "{{ build_dir }}/rds.conf.php"
+	        content: |
+	          <?php
+	          $RDS_HOSTNAME = "mariadb-service";
+	          $RDS_PORT = "3306";
+	          $RDS_DB_NAME = "labdb";
+	          $RDS_USERNAME = "labuser";
+	          $RDS_PASSWORD = "labpass123";
+	          ?>
 	
-|3,0,6,1,33,0,1751602054,"---","- name: Initialize Docker Swarm on manager node","  hosts: docker_primary","  become: true","  gather_facts: yes","","  tasks:","    - name: Initialize Docker swarm manager","      shell: docker swarm init --advertise-addr {{ ansible_host }}","      register: swarm_init","      failed_when: \"'already part of a swarm' not in swarm_init.stderr\"",>89
-|<"      changed_when: \"'This node is already part of a swarm' not in swarm_init.stderr\"","","    - name: Get join token for workers","      shell: docker swarm join-token worker -q","      register: worker_token","      when: \"'This node is already part of a swarm' in swarm_init.stderr or swarm_init.changed\"","      ","    - name: Set worker join token fact","      set_fact:","        worker_token: \"{{ worker_token.stdout }}\"","      when: worker_token is defined","",>41
-|<"    - name: Get join token for managers","      shell: docker swarm join-token manager -q","      register: manager_token","      when: \"'This node is already part of a swarm' in swarm_init.stderr or swarm_init.changed\"","","    - name: Set manager join token fact","      set_fact:","        manager_token: \"{{ manager_token.stdout }}\"","      when: manager_token is defined",""
+	    - name: Create Dockerfile with supervisord for Apache + PHP-FPM
+	      copy:
+	        dest: "{{ build_dir }}/Dockerfile"
+	        content: |
+	          FROM rockylinux:8
+	
+	          # Install Apache, PHP-FPM, MySQL extension, and supervisord
+	          RUN dnf install -y epel-release && \
+	              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common supervisor && \
+	              dnf clean all
+	
+	          # Make PHP-FPM listen on TCP instead of socket
+|3,0,6,1,50,0,1752698866,"---","- name: Build custom lab-app Docker image","  hosts: docker_primary","  become: true","  vars:","    custom_image_name: lab-app-image","    app_download_url: \"https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz\"","    build_dir: /tmp/lab-app","","  tasks:","    - name: Create build directory","      file:","        path: \"{{ build_dir }}\"","        state: directory","",>34
+|<"    - name: Download lab-app.tgz","      get_url:","        url: \"{{ app_download_url }}\"","        dest: \"{{ build_dir }}/lab-app.tgz\"","","    - name: Extract lab-app.tgz","      unarchive:","        src: \"{{ build_dir }}/lab-app.tgz\"","        dest: \"{{ build_dir }}\"","        remote_src: yes","","    - name: Create rds.conf.php with correct DB connection","      copy:","        dest: \"{{ build_dir }}/rds.conf.php\"","        content: |","          <?php",>48
+|<"          $RDS_HOSTNAME = \"mariadb-service\";","          $RDS_PORT = \"3306\";","          $RDS_DB_NAME = \"labdb\";","          $RDS_USERNAME = \"labuser\";","          $RDS_PASSWORD = \"labpass123\";","          ?>","","    - name: Create Dockerfile with supervisord for Apache + PHP-FPM","      copy:","        dest: \"{{ build_dir }}/Dockerfile\"","        content: |","          FROM rockylinux:8","","          # Install Apache, PHP-FPM, MySQL extension, and supervisord",>49
+|<"          RUN dnf install -y epel-release && \\","              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common supervisor && \\","              dnf clean all","","          # Make PHP-FPM listen on TCP instead of socket"
 "7	LINE	0
 	---
-	- name: Join Docker workers to the swarm cluster
-	  hosts: docker_workers
-	  become: true
-	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	
-	    - name: Join swarm as worker
-	      shell: docker swarm join --token {{ hostvars['docker-primary01'].worker_token }} {{ hostvars['docker-primary01'].ansible_host }}:2377
-	      args:
-	        warn: false
-	      when: worker_token is defined
-	
-|3,0,7,1,16,0,1751601926,"---","- name: Join Docker workers to the swarm cluster","  hosts: docker_workers","  become: true","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","","    - name: Join swarm as worker","      shell: docker swarm join --token {{ hostvars['docker-primary01'].worker_token }} {{ hostvars['docker-primary01'].ansible_host }}:2377","      args:","        warn: false",>37
-|<"      when: worker_token is defined",""
-"8	LINE	0
-	---
-	- name: Initialize Docker Swarm on manager node
+	- name: Build custom lab-app Docker image
 	  hosts: docker_primary
 	  become: true
+	  vars:
+	    custom_image_name: lab-app-image
+	    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+	    build_dir: /tmp/lab-app
+	
 	  tasks:
-	    - name: Initialize Docker swarm manager
-	      shell: docker swarm init --advertise-addr {{ ansible_host }}
-	      register: swarm_init
-	      failed_when: "'already part of a swarm' not in swarm_init.stderr"
-	      changed_when: "'This node is already part of a swarm' not in swarm_init.stderr"
+	    - name: Create build directory
+	      file:
+	        path: "{{ build_dir }}"
+	        state: directory
 	
-	    - name: Get join token for workers
-	      shell: docker swarm join-token worker -q
-	      register: worker_token
+	    - name: Download lab-app.tgz
+	      get_url:
+	        url: "{{ app_download_url }}"
+	        dest: "{{ build_dir }}/lab-app.tgz"
 	
-	    - name: Set join token fact
-	      set_fact:
-	        worker_token: "{{ worker_token.stdout }}"
+	    - name: Extract lab-app.tgz
+	      unarchive:
+	        src: "{{ build_dir }}/lab-app.tgz"
+	        dest: "{{ build_dir }}"
+	        remote_src: yes
 	
-|3,0,8,1,19,0,1751601857,"---","- name: Initialize Docker Swarm on manager node","  hosts: docker_primary","  become: true","  tasks:","    - name: Initialize Docker swarm manager","      shell: docker swarm init --advertise-addr {{ ansible_host }}","      register: swarm_init","      failed_when: \"'already part of a swarm' not in swarm_init.stderr\"","      changed_when: \"'This node is already part of a swarm' not in swarm_init.stderr\"","",>40
-|<"    - name: Get join token for workers","      shell: docker swarm join-token worker -q","      register: worker_token","","    - name: Set join token fact","      set_fact:","        worker_token: \"{{ worker_token.stdout }}\"",""
+	    - name: Create rds.conf.php with correct DB connection
+	      copy:
+	        dest: "{{ build_dir }}/rds.conf.php"
+	        content: |
+	          <?php
+	          $RDS_HOSTNAME = "mariadb-service";
+	          $RDS_PORT = "3306";
+	          $RDS_DB_NAME = "labdb";
+	          $RDS_USERNAME = "labuser";
+	          $RDS_PASSWORD = "labpass123";
+	          ?>
+	
+	    - name: Create Dockerfile with full Apache + PHP-FPM ProxyPass config
+	      copy:
+	        dest: "{{ build_dir }}/Dockerfile"
+	        content: |
+	          FROM rockylinux:8
+	
+	          # Install Apache, PHP-FPM, and required extensions
+	          RUN dnf install -y epel-release && \
+	              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common && \
+	              dnf clean all
+	
+	          # Make PHP-FPM listen on TCP instead of socket
+|3,0,7,1,50,0,1752698860,"---","- name: Build custom lab-app Docker image","  hosts: docker_primary","  become: true","  vars:","    custom_image_name: lab-app-image","    app_download_url: \"https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz\"","    build_dir: /tmp/lab-app","","  tasks:","    - name: Create build directory","      file:","        path: \"{{ build_dir }}\"","        state: directory","",>34
+|<"    - name: Download lab-app.tgz","      get_url:","        url: \"{{ app_download_url }}\"","        dest: \"{{ build_dir }}/lab-app.tgz\"","","    - name: Extract lab-app.tgz","      unarchive:","        src: \"{{ build_dir }}/lab-app.tgz\"","        dest: \"{{ build_dir }}\"","        remote_src: yes","","    - name: Create rds.conf.php with correct DB connection","      copy:","        dest: \"{{ build_dir }}/rds.conf.php\"","        content: |","          <?php",>48
+|<"          $RDS_HOSTNAME = \"mariadb-service\";","          $RDS_PORT = \"3306\";","          $RDS_DB_NAME = \"labdb\";","          $RDS_USERNAME = \"labuser\";","          $RDS_PASSWORD = \"labpass123\";","          ?>","","    - name: Create Dockerfile with full Apache + PHP-FPM ProxyPass config","      copy:","        dest: \"{{ build_dir }}/Dockerfile\"","        content: |","          FROM rockylinux:8","","          # Install Apache, PHP-FPM, and required extensions",>49
+|<"          RUN dnf install -y epel-release && \\","              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common && \\","              dnf clean all","","          # Make PHP-FPM listen on TCP instead of socket"
+"8	LINE	0
+	---
+	- name: Build custom lab-app Docker image
+	  hosts: docker_primary
+	  become: true
+	  vars:
+	    custom_image_name: lab-app-image
+	    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+	    build_dir: /tmp/lab-app
+	
+	  tasks:
+	    - name: Create build directory
+	      file:
+	        path: "{{ build_dir }}"
+	        state: directory
+	
+	    - name: Download lab-app.tgz
+	      get_url:
+	        url: "{{ app_download_url }}"
+	        dest: "{{ build_dir }}/lab-app.tgz"
+	
+	    - name: Extract lab-app.tgz
+	      unarchive:
+	        src: "{{ build_dir }}/lab-app.tgz"
+	        dest: "{{ build_dir }}"
+	        remote_src: yes
+	
+	    - name: Create rds.conf.php with correct DB connection
+	      copy:
+	        dest: "{{ build_dir }}/rds.conf.php"
+	        content: |
+	          <?php
+	          $RDS_HOSTNAME = "mariadb-service";
+	          $RDS_PORT = "3306";
+	          $RDS_DB_NAME = "labdb";
+	          $RDS_USERNAME = "labuser";
+	          $RDS_PASSWORD = "labpass123";
+	          ?>
+	
+	    - name: Create Dockerfile with Apache + PHP-FPM TCP fix
+	      copy:
+	        dest: "{{ build_dir }}/Dockerfile"
+	        content: |
+	          FROM rockylinux:8
+	
+	          # Install Apache, PHP-FPM, and MySQL extensions
+	          RUN dnf install -y epel-release && \
+	              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common && \
+	              dnf clean all
+	
+	          # Force PHP-FPM to listen on TCP port 9000 instead of Unix socket
+|3,0,8,1,50,0,1752698499,"---","- name: Build custom lab-app Docker image","  hosts: docker_primary","  become: true","  vars:","    custom_image_name: lab-app-image","    app_download_url: \"https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz\"","    build_dir: /tmp/lab-app","","  tasks:","    - name: Create build directory","      file:","        path: \"{{ build_dir }}\"","        state: directory","",>34
+|<"    - name: Download lab-app.tgz","      get_url:","        url: \"{{ app_download_url }}\"","        dest: \"{{ build_dir }}/lab-app.tgz\"","","    - name: Extract lab-app.tgz","      unarchive:","        src: \"{{ build_dir }}/lab-app.tgz\"","        dest: \"{{ build_dir }}\"","        remote_src: yes","","    - name: Create rds.conf.php with correct DB connection","      copy:","        dest: \"{{ build_dir }}/rds.conf.php\"","        content: |","          <?php",>48
+|<"          $RDS_HOSTNAME = \"mariadb-service\";","          $RDS_PORT = \"3306\";","          $RDS_DB_NAME = \"labdb\";","          $RDS_USERNAME = \"labuser\";","          $RDS_PASSWORD = \"labpass123\";","          ?>","","    - name: Create Dockerfile with Apache + PHP-FPM TCP fix","      copy:","        dest: \"{{ build_dir }}/Dockerfile\"","        content: |","          FROM rockylinux:8","","          # Install Apache, PHP-FPM, and MySQL extensions",>49
+|<"          RUN dnf install -y epel-release && \\","              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common && \\","              dnf clean all","","          # Force PHP-FPM to listen on TCP port 9000 instead of Unix socket"
 "9	LINE	0
-	- hosts: docker_workers
-	  become: yes
+	---
+	- name: Build custom lab-app Docker image
+	  hosts: docker_primary
+	  become: true
+	  vars:
+	    custom_image_name: lab-app-image
+	    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+	    build_dir: /tmp/lab-app
+	
 	  tasks:
-	    - name: Ensure Docker service is started
-	      service:
-	        name: docker
-	        state: started
-	        enabled: yes
+	    - name: Create build directory
+	      file:
+	        path: "{{ build_dir }}"
+	        state: directory
 	
-	    - name: Join swarm as worker
-	      shell: docker swarm join --token {{ hostvars['docker-primary01'].worker_token }} {{ hostvars['docker-primary01'].ansible_host }}:2377
-	      register: join_swarm
-	      failed_when: "'already part of a swarm' not in join_swarm.stderr and join_swarm.rc != 0"
-	      changed_when: "'This node joined a swarm as a worker' in join_swarm.stdout"
+	    - name: Download lab-app.tgz
+	      get_url:
+	        url: "{{ app_download_url }}"
+	        dest: "{{ build_dir }}/lab-app.tgz"
 	
-|3,0,9,1,15,0,1751601738,"- hosts: docker_workers","  become: yes","  tasks:","    - name: Ensure Docker service is started","      service:","        name: docker","        state: started","        enabled: yes","","    - name: Join swarm as worker","      shell: docker swarm join --token {{ hostvars['docker-primary01'].worker_token }} {{ hostvars['docker-primary01'].ansible_host }}:2377","      register: join_swarm",>98
-|<"      failed_when: \"'already part of a swarm' not in join_swarm.stderr and join_swarm.rc != 0\"","      changed_when: \"'This node joined a swarm as a worker' in join_swarm.stdout\"",""
+	    - name: Extract lab-app.tgz
+	      unarchive:
+	        src: "{{ build_dir }}/lab-app.tgz"
+	        dest: "{{ build_dir }}"
+	        remote_src: yes
+	
+	    - name: Create rds.conf.php with correct DB connection
+	      copy:
+	        dest: "{{ build_dir }}/rds.conf.php"
+	        content: |
+	          <?php
+	          $RDS_HOSTNAME = "mariadb-service";
+	          $RDS_PORT = "3306";
+	          $RDS_DB_NAME = "labdb";
+	          $RDS_USERNAME = "labuser";
+	          $RDS_PASSWORD = "labpass123";
+	          ?>
+	
+	    - name: Create Dockerfile with Apache + PHP-FPM FIX
+	      copy:
+	        dest: "{{ build_dir }}/Dockerfile"
+	        content: |
+	          FROM rockylinux:8
+	
+	          # Install Apache, PHP, PHP-FPM and required modules
+	          RUN dnf install -y epel-release && \
+	              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common mod_proxy_fcgi && \
+	              dnf clean all
+	
+	          # Force PHP-FPM to listen on TCP port 9000
+|3,0,9,1,50,0,1752698044,"---","- name: Build custom lab-app Docker image","  hosts: docker_primary","  become: true","  vars:","    custom_image_name: lab-app-image","    app_download_url: \"https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz\"","    build_dir: /tmp/lab-app","","  tasks:","    - name: Create build directory","      file:","        path: \"{{ build_dir }}\"","        state: directory","",>34
+|<"    - name: Download lab-app.tgz","      get_url:","        url: \"{{ app_download_url }}\"","        dest: \"{{ build_dir }}/lab-app.tgz\"","","    - name: Extract lab-app.tgz","      unarchive:","        src: \"{{ build_dir }}/lab-app.tgz\"","        dest: \"{{ build_dir }}\"","        remote_src: yes","","    - name: Create rds.conf.php with correct DB connection","      copy:","        dest: \"{{ build_dir }}/rds.conf.php\"","        content: |","          <?php",>48
+|<"          $RDS_HOSTNAME = \"mariadb-service\";","          $RDS_PORT = \"3306\";","          $RDS_DB_NAME = \"labdb\";","          $RDS_USERNAME = \"labuser\";","          $RDS_PASSWORD = \"labpass123\";","          ?>","","    - name: Create Dockerfile with Apache + PHP-FPM FIX","      copy:","        dest: \"{{ build_dir }}/Dockerfile\"","        content: |","          FROM rockylinux:8","","          # Install Apache, PHP, PHP-FPM and required modules",>49
+|<"          RUN dnf install -y epel-release && \\","              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common mod_proxy_fcgi && \\","              dnf clean all","","          # Force PHP-FPM to listen on TCP port 9000"
 "-	CHAR	0
-	3
-|3,0,36,0,1,0,1751601047,"3"
+	  - kubelet-1.2
+|3,0,36,0,1,0,1751679487,"  - kubelet-1.2"
 
 # File marks:
-'0  11  142  ~/playbooks/docker/join_swarm_workers.yml
-|4,48,11,142,1751603183,"~/playbooks/docker/join_swarm_workers.yml"
-'1  13  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,49,13,0,1751602826,"~/playbooks/docker/join_swarm_workers.yml"
-'2  13  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,50,13,0,1751602826,"~/playbooks/docker/join_swarm_workers.yml"
-'3  1  21  ~/playbooks/docker/join_swarm_workers.yml
-|4,51,1,21,1751602545,"~/playbooks/docker/join_swarm_workers.yml"
-'4  13  21  ~/playbooks/docker/join_swarm_workers.yml
-|4,52,13,21,1751602545,"~/playbooks/docker/join_swarm_workers.yml"
-'5  1  21  ~/playbooks/docker/join_swarm_workers.yml
-|4,53,1,21,1751602545,"~/playbooks/docker/join_swarm_workers.yml"
-'6  13  21  ~/playbooks/docker/join_swarm_workers.yml
-|4,54,13,21,1751602545,"~/playbooks/docker/join_swarm_workers.yml"
-'7  1  84  ~/playbooks/docker/join_swarm_workers.yml
-|4,55,1,84,1751602480,"~/playbooks/docker/join_swarm_workers.yml"
-'8  13  84  ~/playbooks/docker/join_swarm_workers.yml
-|4,56,13,84,1751602480,"~/playbooks/docker/join_swarm_workers.yml"
-'9  1  84  ~/playbooks/docker/join_swarm_workers.yml
-|4,57,1,84,1751602480,"~/playbooks/docker/join_swarm_workers.yml"
+'0  30  0  ~/playbooks/kubernetes/08-echo-ingress.yml
+|4,48,30,0,1752705635,"~/playbooks/kubernetes/08-echo-ingress.yml"
+'1  14  0  ~/playbooks/kubernetes/10-prometheus-grafana.yml
+|4,49,14,0,1752705425,"~/playbooks/kubernetes/10-prometheus-grafana.yml"
+'2  45  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,50,45,0,1752705410,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+'3  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,51,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+'4  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,52,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+'5  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,53,1,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+'6  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,54,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+'7  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,55,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+'8  1  0  ~/playbooks/docker/build_custom_image.yml
+|4,56,1,0,1752698882,"~/playbooks/docker/build_custom_image.yml"
+'9  100  0  ~/playbooks/docker/build_custom_image.yml
+|4,57,100,0,1752698882,"~/playbooks/docker/build_custom_image.yml"
 
 # Jumplist (newest first):
--'  11  142  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,11,142,1751603183,"~/playbooks/docker/join_swarm_workers.yml"
--'  13  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,13,0,1751603151,"~/playbooks/docker/join_swarm_workers.yml"
--'  13  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,13,0,1751602826,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  4  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,4,1751602812,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  4  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,4,1751602812,"~/playbooks/docker/join_swarm_workers.yml"
--'  13  21  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,13,21,1751602545,"~/playbooks/docker/join_swarm_workers.yml"
--'  13  84  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,13,84,1751602480,"~/playbooks/docker/join_swarm_workers.yml"
--'  11  6  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,11,6,1751602429,"~/playbooks/docker/join_swarm_workers.yml"
--'  11  38  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,11,38,1751602403,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,0,1751602325,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,0,1751602325,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,0,1751602325,"~/playbooks/docker/join_swarm_workers.yml"
--'  3  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,3,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  18  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,18,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  16  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,16,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  3  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,3,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  18  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,18,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  16  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,16,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  18  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,18,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  16  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,16,0,1751602154,"~/playbooks/docker/join_swarm_workers.yml"
--'  1  0  ~/playbooks/docker/join_swarm_workers.yml
-|4,39,1,0,1751602151,"~/playbooks/docker/join_swarm_workers.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  17  0  ~/playbooks/docker/init_swarm.yml
-|4,39,17,0,1751602147,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
--'  1  0  ~/playbooks/docker/init_swarm.yml
-|4,39,1,0,1751602143,"~/playbooks/docker/init_swarm.yml"
+-'  30  0  ~/playbooks/kubernetes/08-echo-ingress.yml
+|4,39,30,0,1752705635,"~/playbooks/kubernetes/08-echo-ingress.yml"
+-'  1  0  ~/playbooks/kubernetes/08-echo-ingress.yml
+|4,39,1,0,1752705630,"~/playbooks/kubernetes/08-echo-ingress.yml"
+-'  14  0  ~/playbooks/kubernetes/10-prometheus-grafana.yml
+|4,39,14,0,1752705425,"~/playbooks/kubernetes/10-prometheus-grafana.yml"
+-'  14  0  ~/playbooks/kubernetes/10-prometheus-grafana.yml
+|4,39,14,0,1752705425,"~/playbooks/kubernetes/10-prometheus-grafana.yml"
+-'  1  0  ~/playbooks/kubernetes/10-prometheus-grafana.yml
+|4,39,1,0,1752705422,"~/playbooks/kubernetes/10-prometheus-grafana.yml"
+-'  1  0  ~/playbooks/kubernetes/10-prometheus-grafana.yml
+|4,39,1,0,1752705422,"~/playbooks/kubernetes/10-prometheus-grafana.yml"
+-'  45  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,45,0,1752705410,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  45  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,45,0,1752705410,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  45  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,45,0,1752705410,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  45  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,45,0,1752705410,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  1  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,1,0,1752705407,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  1  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,1,0,1752705407,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  1  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,1,0,1752705407,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  1  0  ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+|4,39,1,0,1752705407,"~/playbooks/kubernetes/09-kubernetes-dashboard.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  60  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,60,0,1752700772,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  1  0  ~/playbooks/docker/update_haproxy_for_docker.yml
+|4,39,1,0,1752700767,"~/playbooks/docker/update_haproxy_for_docker.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752700355,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752700351,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  61  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,61,0,1752699773,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  1  0  ~/playbooks/docker/deploy_custom_service.yml
+|4,39,1,0,1752699767,"~/playbooks/docker/deploy_custom_service.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
+-'  114  0  ~/playbooks/docker/build_custom_image.yml
+|4,39,114,0,1752699293,"~/playbooks/docker/build_custom_image.yml"
 
 # History of marks within files (newest to oldest):
 
+> ~/playbooks/kubernetes/08-echo-ingress.yml
+	*	1752705635	0
+	"	30	0
+	^	30	0
+	.	29	38
+	+	1	3
+	+	29	38
+
+> ~/playbooks/kubernetes/10-prometheus-grafana.yml
+	*	1752705425	0
+	"	14	0
+	^	14	0
+	.	13	123
+	+	13	123
+
+> ~/playbooks/kubernetes/09-kubernetes-dashboard.yml
+	*	1752705409	0
+	"	45	0
+	^	45	0
+	.	44	38
+	+	44	38
+
+> ~/playbooks/docker/update_haproxy_for_docker.yml
+	*	1752700771	0
+	"	60	0
+	^	60	0
+	.	59	24
+	+	1	3
+	+	59	24
+
+> ~/playbooks/docker/deploy_custom_service.yml
+	*	1752700354	0
+	"	61	0
+	^	61	0
+	.	60	56
+	+	1	3
+	+	1	56
+	+	1	3
+	+	60	56
+
+> ~/playbooks/docker/build_custom_image.yml
+	*	1752699291	0
+	"	114	0
+	^	114	0
+	.	113	53
+	+	1	3
+	+	1	57
+	+	1	3
+	+	1	87
+	+	1	3
+	+	113	53
+
+> ~/playbooks/docker/deploy_phpmyadmin_service.yml
+	*	1752695138	0
+	"	37	0
+	^	37	0
+	.	36	59
+	+	1	59
+	+	1	3
+	+	36	59
+
+> ~/playbooks/docker/deploy_mariadb_service.yml
+	*	1752694986	0
+	"	46	0
+	^	46	0
+	.	45	56
+	+	45	56
+
+> ~/playbooks/docker/create_docker_volumes.yml
+	*	1752692531	0
+	"	24	0
+	^	24	0
+	.	23	45
+	+	1	3
+	+	23	45
+
 > ~/playbooks/docker/join_swarm_workers.yml
-	*	1751603182	0
-	"	11	142
-	^	11	143
-	.	11	142
+	*	1752692113	0
+	"	48	0
+	^	48	0
+	.	47	70
 	+	1	3
 	+	1	38
 	+	1	138
@@ -509,181 +846,93 @@
 	+	1	77
 	+	1	0
 	+	1	23
-	+	12	45
-	+	11	142
+	+	1	45
+	+	1	142
+	+	1	3
+	+	1	38
+	+	1	3
+	+	47	70
 
 > ~/playbooks/docker/init_swarm.yml
-	*	1751602146	0
+	*	1752691897	0
+	"	31	0
+	^	31	0
+	.	30	102
+	+	1	3
+	+	1	102
+	+	1	3
+	+	1	102
+	+	1	3
+	+	30	102
+
+> ~/playbooks/docker/reset_docker_nodes.yml
+	*	1752690786	0
+	"	25	0
+	^	25	0
+	.	24	24
+	+	24	24
+
+> ~/playbooks/docker/docker_monitoring_setup.yml
+	*	1752690775	0
 	"	17	0
 	^	17	0
-	.	16	49
-	+	1	23
-	+	1	3
-	+	1	47
-	+	1	23
-	+	16	49
+	.	16	39
+	+	16	39
 
-> ~/playbooks/docker/install_docker.yml
-	*	1751601279	0
-	"	35	0
-	^	35	0
-	.	34	20
+> ~/playbooks/docker/check_swarm_health.yml
+	*	1752630847	0
+	"	19	0
+	^	19	0
+	.	18	12
 	+	1	3
-	+	34	20
+	+	18	12
+
+> ~/playbooks/docker/scale_and_update_services.yml
+	*	1752630651	0
+	"	6	5
+	^	6	6
+	.	6	6
+	+	1	101
+	+	1	3
+	+	16	64
+	+	14	6
+	+	10	6
+	+	6	6
+
+> ~/playbooks/docker/deploy_swarm_services.yml
+	*	1752630518	0
+	"	46	0
+	^	46	0
+	.	45	10
+	+	1	3
+	+	45	10
+
+> /playbooks/docker/deploy_swarm_services.yml
+	*	1752630499	0
+	"	1	0
 
 > ~/playbooks/docker/deploy_nginx_service.yml
-	*	1751598167	0
-	"	13	0
-	^	13	0
-	.	12	13
+	*	1752629077	0
+	"	17	0
+	^	17	0
+	.	16	20
 	+	1	3
-	+	12	13
-
-> ~/roles/nagios/templates/services.cfg.j2
-	*	1751592382	0
-	"	47	0
-	^	47	0
-	.	46	1
-	+	1	16
-	+	1	1
-	+	1	0
-	+	1	16
-	+	46	1
-
-> ~/roles/nagios/templates/hosts.cfg.j2
-	*	1751592282	0
-	"	14	0
-	^	14	0
-	.	13	1
-	+	13	0
-	+	15	0
-	+	20	1
-	+	13	1
-
-> ~/playbooks/nagios/install_nagios.yml
-	*	1751592041	0
-	"	64	0
-	^	107	0
-	.	106	16
-	+	1	16
+	+	1	82
 	+	1	3
-	+	106	16
+	+	16	20
 
-> ~/roles/nagios/templates/commands.cfg.j2
-	*	1751591553	0
-	"	23	0
-	^	23	0
-	.	22	1
-	+	22	1
+> ~/deploy_nginx_service.yml
+	*	1752628992	0
+	"	15	0
+	^	15	0
+	.	14	82
+	+	14	82
 
-> ~/playbooks/files/commands.cfg.j2
-	*	1751591365	0
-	"	20	0
-	^	20	0
-	.	19	1
-	+	1	15
-	+	19	1
-
-> ~/playbooks/files/services.cfg.j2
-	*	1751589771	0
-	"	14	0
-	^	14	0
-	.	13	1
-	+	13	1
-
-> ~/playbooks/files/hosts.cfg.j2
-	*	1751589761	0
-	"	7	0
-	^	7	0
-	.	6	1
-	+	6	1
-
-> ~/playbooks/nagios_setup.yml
-	*	1751589633	0
-	"	48	0
-	^	48	0
-	.	47	56
-	+	1	3
-	+	47	56
-
-> ~/install_nrpe.yml
-	*	1751588474	0
-	"	40	0
-	^	40	0
-	.	39	24
-	+	1	3
-	+	39	24
-
-> ~/playbooks/nagios
-	*	1751587925	0
-	"	1	0
-
-> playbooks/nagios/install_nagios.yml
-	*	1751587884	0
-	"	1	0
-
-> ~/playbooks/mariadb/install_mariadb.yml
-	*	1751587127	0
-	"	57	6
-	^	57	7
-	.	57	6
-	+	1	3
-	+	1	22
-	+	1	3
-	+	43	52
-	+	43	0
-	+	51	48
-	+	42	3
-	+	43	5
-	+	44	5
-	+	45	5
-	+	46	5
-	+	47	5
-	+	48	5
-	+	49	4
-	+	50	5
-	+	51	5
-	+	47	7
-	+	46	7
-	+	45	7
-	+	44	7
-	+	43	6
-	+	45	8
-	+	46	8
-	+	47	8
-	+	48	8
-	+	49	6
-	+	50	5
-	+	51	5
-	+	63	12
-	+	51	52
-	+	52	2
-	+	57	6
-
-> ~/playbooks/webservers/webserver3.yaml
-	*	1751585460	0
-	"	3	12
-	^	3	13
-	.	3	12
-	+	3	12
-
-> ~/playbooks/webservers/webserver2.yaml
-	*	1751585451	0
-	"	3	12
-	^	3	13
-	.	3	12
-	+	3	12
-
-> ~/playbooks/webservers/webserver1.yaml
-	*	1751585431	0
-	"	3	12
-	^	3	13
-	.	3	12
-	+	3	12
-
-> ~/playbooks/dns/set_dns_resolver.yml
-	*	1751584973	0
+> ~/playbooks/docker/create_overlay_network.yml
+	*	1752628240	0
 	"	11	0
 	^	11	0
-	.	10	22
-	+	10	22
+	.	10	67
+	+	1	87
+	+	1	3
+	+	10	67

@@ -1,0 +1,61 @@
+---
+- name: Distribute lab-app Docker image to all nodes
+  hosts: docker_primary
+  become: true
+  tasks:
+    - name: Save lab-app image as tar archive
+      command: docker save -o /tmp/lab-app-image.tar lab-app-image:latest
+
+    - name: Fetch image tarball to Ansible controller
+      fetch:
+        src: /tmp/lab-app-image.tar
+        dest: /tmp/lab-app-image.tar
+        flat: yes
+
+- name: Copy lab-app image to workers
+  hosts: docker_workers
+  become: true
+  tasks:
+    - name: Copy lab-app image tarball to worker
+      copy:
+        src: /tmp/lab-app-image.tar
+        dest: /tmp/lab-app-image.tar
+
+    - name: Load lab-app image on worker
+      command: docker load -i /tmp/lab-app-image.tar
+
+- name: Deploy lab-app custom service on Docker Swarm (host mode publishing)
+  hosts: docker_primary
+  become: true
+  vars:
+    custom_app_name: lab-app-service
+    custom_app_image: lab-app-image
+    replicas: 3
+    published_port: 8090
+    overlay_network: my_overlay
+  tasks:
+    - name: Remove existing lab-app-service if present
+      command: docker service rm {{ custom_app_name }}
+      ignore_errors: true
+
+    - name: Deploy lab-app Swarm service with host mode publishing
+      command: >
+        docker service create
+        --name {{ custom_app_name }}
+        --network {{ overlay_network }}
+        --publish published={{ published_port }},target=80,mode=host
+        --replicas {{ replicas }}
+        {{ custom_app_image }}
+
+    - name: Wait for service to stabilize
+      shell: |
+        sleep 5
+        docker service ps {{ custom_app_name }}
+      register: service_status
+      changed_when: false
+
+    - debug:
+        msg: |
+          ✅ Lab-App Service Deployment Result:
+          {{ service_status.stdout_lines | join('\n') }}
+

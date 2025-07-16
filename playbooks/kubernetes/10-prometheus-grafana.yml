@@ -1,0 +1,14 @@
+---
+- name: Deploy Prometheus + Grafana via Helm
+  hosts: kube_master
+  become: yes
+  tasks:
+    - name: Add Helm repo for kube-prometheus-stack
+      command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+    - name: Update Helm repos
+      command: helm repo update
+
+    - name: Deploy kube-prometheus-stack
+      command: helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+

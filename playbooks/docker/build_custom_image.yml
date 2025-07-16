@@ -1,0 +1,114 @@
+---
+- name: Build custom lab-app Docker image
+  hosts: docker_primary
+  become: true
+  vars:
+    custom_image_name: lab-app-image
+    app_download_url: "https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/CUR-TF-200-ACACAD/studentdownload/lab-app.tgz"
+    build_dir: /tmp/lab-app
+
+  tasks:
+    - name: Create build directory
+      file:
+        path: "{{ build_dir }}"
+        state: directory
+
+    - name: Download lab-app.tgz
+      get_url:
+        url: "{{ app_download_url }}"
+        dest: "{{ build_dir }}/lab-app.tgz"
+
+    - name: Extract lab-app.tgz
+      unarchive:
+        src: "{{ build_dir }}/lab-app.tgz"
+        dest: "{{ build_dir }}"
+        remote_src: yes
+
+    - name: Create rds.conf.php with correct DB connection
+      copy:
+        dest: "{{ build_dir }}/rds.conf.php"
+        content: |
+          <?php
+          $RDS_HOSTNAME = "mariadb-service";
+          $RDS_PORT = "3306";
+          $RDS_DB_NAME = "labdb";
+          $RDS_USERNAME = "labuser";
+          $RDS_PASSWORD = "labpass123";
+          ?>
+
+    - name: Add PHP info test page
+      copy:
+        dest: "{{ build_dir }}/info.php"
+        content: |
+          <?php phpinfo(); ?>
+
+    - name: Create Dockerfile with Supervisor, PHP-FPM, Apache fix
+      copy:
+        dest: "{{ build_dir }}/Dockerfile"
+        content: |
+          FROM rockylinux:8
+
+          # Install Apache, PHP-FPM, MySQL ext, supervisor, and debugging tools
+          RUN dnf install -y epel-release && \
+              dnf install -y httpd php php-cli php-fpm php-mysqlnd php-json php-common supervisor procps-ng which && \
+              dnf clean all
+
+          # Ensure runtime directories for PHP-FPM exist
+          RUN mkdir -p /run/php-fpm
+
+          # Make PHP-FPM listen on TCP instead of socket
+          RUN sed -i 's|^listen = .*|listen = 127.0.0.1:9000|' /etc/php-fpm.d/www.conf
+
+          # Enable Apache proxy modules
+          RUN echo "LoadModule proxy_module modules/mod_proxy.so" >> /etc/httpd/conf.modules.d/00-proxy.conf && \
+              echo "LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so" >> /etc/httpd/conf.modules.d/00-proxy.conf
+
+          # Configure Apache to forward PHP requests to PHP-FPM
+          RUN echo '<Directory "/var/www/html">' > /etc/httpd/conf.d/php-fpm.conf && \
+              echo '    AllowOverride All' >> /etc/httpd/conf.d/php-fpm.conf && \
+              echo '    Require all granted' >> /etc/httpd/conf.d/php-fpm.conf && \
+              echo '</Directory>' >> /etc/httpd/conf.d/php-fpm.conf && \
+              echo 'DirectoryIndex index.php index.html' >> /etc/httpd/conf.d/php-fpm.conf && \
+              echo 'ProxyPassMatch ^/(.*\.php)$ fcgi://127.0.0.1:9000/var/www/html/$1' >> /etc/httpd/conf.d/php-fpm.conf
+
+          # Avoid Apache FQDN warnings
+          RUN echo "ServerName localhost" >> /etc/httpd/conf/httpd.conf
+
+          # Copy app files
+          COPY . /var/www/html/
+          COPY rds.conf.php /var/www/html/rds.conf.php
+
+          # Setup supervisord config
+          RUN echo "[supervisord]" > /etc/supervisord.conf && \
+              echo "nodaemon=true" >> /etc/supervisord.conf && \
+              echo "" >> /etc/supervisord.conf && \
+              echo "[program:php-fpm]" >> /etc/supervisord.conf && \
+              echo "command=/usr/sbin/php-fpm --nodaemonize" >> /etc/supervisord.conf && \
+              echo "autostart=true" >> /etc/supervisord.conf && \
+              echo "autorestart=true" >> /etc/supervisord.conf && \
+              echo "" >> /etc/supervisord.conf && \
+              echo "[program:apache]" >> /etc/supervisord.conf && \
+              echo "command=/usr/sbin/httpd -D FOREGROUND" >> /etc/supervisord.conf && \
+              echo "autostart=true" >> /etc/supervisord.conf && \
+              echo "autorestart=true" >> /etc/supervisord.conf
+
+          # Expose HTTP port
+          EXPOSE 80
+
+          # Start Supervisor to manage PHP-FPM + Apache
+          CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+
+    - name: Build Docker image for lab-app
+      command: docker build -t {{ custom_image_name }} {{ build_dir }}
+
+    - name: Verify Docker image exists
+      command: docker images {{ custom_image_name }}
+      register: image_check
+      changed_when: false
+      failed_when: image_check.rc != 0
+
+    - debug:
+        msg: |
+          ✅ Lab-App Image Build Result:
+          {{ image_check.stdout_lines | join('\n') }}
+

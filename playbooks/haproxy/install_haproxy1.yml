@@ -1,0 +1,35 @@
+---
+- name: Install and configure HAProxy
+  hosts: haproxy
+  become: true
+  vars:
+    frontend_port: 80
+    backend_port: 80
+    backend_servers:
+      - name: web1 
+        address: 192.168.86.12
+      - name: web2
+        address: 192.168.86.13
+      - name: web3
+        address: 192.168.86.14
+
+  tasks:
+    - name: Install HAProxy
+      yum:
+        name: haproxy
+        state: present
+        
+    - name: Enable and start HAProxy
+      systemd:
+        name: haproxy
+        state: started
+        enabled: yes
+    - name: Copy HAProxy config file
+      template:
+        src: haproxy.cfg2
+        dest: /etc/haproxy/haproxy.cfg
+        mode: '0644'
+    - name: Restart HAProxy
+      systemd:
+        name: haproxy
+        state: restarted

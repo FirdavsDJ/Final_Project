@@ -1,0 +1,21 @@
+---
+- name: Copy echo monitoring config to Nagios
+  template:
+    src: echo.cfg.j2
+    dest: /usr/local/nagios/etc/objects/echo.cfg
+    owner: nagios
+    group: nagios
+    mode: '0644'
+
+- name: Include echo.cfg in nagios.cfg
+  lineinfile:
+    path: /usr/local/nagios/etc/nagios.cfg
+    line: cfg_file=/usr/local/nagios/etc/objects/echo.cfg
+    state: present
+    insertafter: EOF
+
+- name: Restart Nagios to apply changes
+  service:
+    name: nagios
+    state: restarted
+

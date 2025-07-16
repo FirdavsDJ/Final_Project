@@ -1,0 +1,25 @@
+---
+- name: Deploy NGINX Ingress Controller (official manifest)
+  hosts: kube-master01
+  become: true
+
+  tasks:
+    - name: Download Ingress Controller manifest
+      get_url:
+        url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+        dest: /home/ansible/ingress-controller.yaml
+        mode: '0644'
+
+    - name: Apply Ingress Controller manifest
+      shell: |
+        KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f /home/ansible/ingress-controller.yaml
+
+    - name: Wait for ingress-nginx-controller pod to be Ready
+      shell: |
+        KUBECONFIG=/etc/kubernetes/admin.conf kubectl wait --namespace ingress-nginx \
+          --for=condition=Ready pod \
+          --selector=app.kubernetes.io/component=controller \
+          --timeout=180s
+      register: ingress_wait
+      changed_when: false
+

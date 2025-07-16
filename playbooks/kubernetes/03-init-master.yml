@@ -1,0 +1,40 @@
+---
+- name: Initialize Kubernetes Master
+  hosts: kube_master
+  become: yes
+
+  tasks:
+    - name: Initialize cluster using kubeadm
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Create .kube directory for ansible user
+      file:
+        path: /home/ansible/.kube
+        state: directory
+        mode: '0755'
+        owner: ansible
+        group: ansible
+
+    - name: Copy kubeconfig to ansible user's home
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ansible/.kube/config
+        remote_src: yes
+        owner: ansible
+        group: ansible
+        mode: '0644'
+
+    - name: Export kubeadm join command to a file
+      shell: kubeadm token create --print-join-command > /home/ansible/join_command.sh
+      args:
+        creates: /home/ansible/join_command.sh
+
+    - name: Apply Flannel CNI
+      become_user: ansible
+      environment:
+        KUBECONFIG: /home/ansible/.kube/config
+      shell: |
+        kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+

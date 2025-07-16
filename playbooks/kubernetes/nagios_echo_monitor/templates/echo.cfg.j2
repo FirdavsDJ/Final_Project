@@ -1,0 +1,14 @@
+define host {
+    use             linux-server
+    host_name       echo-app
+    alias           Echo Application
+    address         192.168.86.23
+}
+
+define service {
+    use                     generic-service
+    host_name               echo-app
+    service_description     HTTP on Ingress
+    check_command           check_http!-p!30956
+}
+

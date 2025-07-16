@@ -1,17 +1,31 @@
-- hosts: docker_primary
+---
+- name: Initialize Docker Swarm manager if not active
+  hosts: docker_primary
   become: true
   tasks:
-    - name: Initialize Docker swarm manager
-      shell: docker swarm init --advertise-addr {{ ansible_host }}
-      register: swarm_init
-      failed_when: "'This node is already part of a swarm' not in swarm_init.stderr"
-
-    - name: Get join token for workers
-      shell: docker swarm join-token worker -q
-      register: worker_token
+    - name: Check if Swarm is already active
+      command: docker info --format '{{"{{"}} .Swarm.LocalNodeState {{"}}"}}'
+      register: swarm_status
       changed_when: false
 
-    - name: Set worker join token fact
-      set_fact:
-        worker_token: "{{ worker_token.stdout }}"
+    - name: Debug current Swarm state
+      debug:
+        msg: "Current Swarm state: {{ swarm_status.stdout }}"
+
+    - name: Initialize Docker Swarm if inactive
+      command: docker swarm init --advertise-addr {{ ansible_host }}
+      when: swarm_status.stdout != "active"
+      register: init_swarm_output
+
+    - name: Show Swarm status after initialization
+      shell: docker info | grep Swarm
+      changed_when: false
+
+    - name: Display Swarm join-token for workers
+      command: docker swarm join-token worker
+      when: swarm_status.stdout != "active"
+      register: worker_token
+
+    - debug:
+        msg: "{{ worker_token.stdout_lines | default('Swarm already active. No new token needed.') }}"
 

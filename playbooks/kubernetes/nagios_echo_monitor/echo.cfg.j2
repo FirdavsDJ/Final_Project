@@ -1,0 +1,32 @@
+define host {
+    use                     linux-server
+    host_name               echo-app
+    alias                   Echo App Ingress
+    address                 192.168.86.23
+    max_check_attempts      3
+    check_period            24x7
+    notification_interval   30
+    notification_period     24x7
+}
+
+define service {
+    use                     generic-service
+    host_name               echo-app
+    service_description     Ping Echo Node
+    check_command           check_ping!100.0,20%!500.0,60%
+}
+
+define service {
+    use                     generic-service
+    host_name               echo-app
+    service_description     HTTP Echo Test
+    check_command           check_http! -p 30956
+}
+
+define service {
+    use                     generic-service
+    host_name               echo-app
+    service_description     TCP Port 80 Check
+    check_command           check_tcp!80
+}
+

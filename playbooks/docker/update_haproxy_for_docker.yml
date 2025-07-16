@@ -1,0 +1,60 @@
+---
+- name: Update HAProxy for Docker Services
+  hosts: haproxy
+  become: true
+
+  vars:
+    haproxy_cfg: "/etc/haproxy/haproxy.cfg"
+    docker_services:
+      - name: phpmyadmin
+        port: 8080
+        backend_servers:
+          - docker-primary01:8080
+          - docker-worker01:8080
+      - name: nginx-service
+        port: 8081
+        backend_servers:
+          - docker-primary01:8081
+          - docker-worker01:8081
+      - name: lab-app-service
+        port: 8090
+        backend_servers:
+          - docker-primary01:8090
+          - docker-worker01:8090
+          - docker-worker02:8090
+
+  tasks:
+    - name: Ensure HAProxy config exists
+      file:
+        path: "{{ haproxy_cfg }}"
+        state: touch
+        mode: '0644'
+
+    - name: Backup existing HAProxy config (if present)
+      copy:
+        src: "{{ haproxy_cfg }}"
+        dest: "{{ haproxy_cfg }}.bak_{{ ansible_date_time.iso8601 }}"
+        remote_src: yes
+
+    - name: Add HAProxy backend configuration for Docker services
+      blockinfile:
+        path: "{{ haproxy_cfg }}"
+        marker: "# {mark} DOCKER SERVICES"
+        block: |
+          {% for svc in docker_services %}
+          frontend {{ svc.name }}_frontend
+              bind *:{{ svc.port }}
+              default_backend {{ svc.name }}_backend
+
+          backend {{ svc.name }}_backend
+              balance roundrobin
+              {% for backend in svc.backend_servers %}
+              server {{ backend.split(':')[0] }} {{ backend }} check
+              {% endfor %}
+          {% endfor %}
+
+    - name: Restart HAProxy
+      service:
+        name: haproxy
+        state: restarted
+

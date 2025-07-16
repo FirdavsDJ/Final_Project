@@ -1,0 +1,45 @@
+---
+- name: Deploy Kubernetes Dashboard
+  hosts: kube_master
+  become: yes
+  tasks:
+    - name: Deploy Kubernetes Dashboard YAML
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+    - name: Create Dashboard Admin ServiceAccount
+      copy:
+        dest: /tmp/dashboard-admin-sa.yaml
+        content: |
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: admin-user
+            namespace: kubernetes-dashboard
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: admin-user
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: cluster-admin
+          subjects:
+          - kind: ServiceAccount
+            name: admin-user
+            namespace: kubernetes-dashboard
+    - name: Apply Dashboard Admin SA
+      command: kubectl apply -f /tmp/dashboard-admin-sa.yaml
+
+    - name: Get Dashboard Login Token
+      command: kubectl -n kubernetes-dashboard create token admin-user
+      register: dashboard_token
+
+    - name: Show Dashboard Access Info
+      debug:
+        msg: |
+          Dashboard deployed! 
+          Access via: https://<MASTER_NODE_IP>:6443/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+          Login token:
+          {{ dashboard_token.stdout }}
+

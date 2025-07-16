@@ -1,13 +1,48 @@
-- hosts: docker_workers
+---
+- name: Get Docker Swarm Worker Join Token from Manager
+  hosts: docker_primary
   become: true
   tasks:
-    - name: Ensure Docker service is started
-      service:
-        name: docker
-        state: started
-        enabled: yes
+    - name: Fetch the worker join token
+      command: docker swarm join-token -q worker
+      register: worker_join_token_raw
 
-    - name: Join swarm as worker
-      shell: docker swarm join --token SWMTKN-1-60cxxy4bec233w5gz6kc1j8kc0n1bi301y1vg9gnc9isml7kw2-al6p2itr14e5nwclbb7lmzygv 192.168.86.18:2377
-      when: "'docker_primary' in group_names"
+    - name: Save worker join token as a fact
+      set_fact:
+        worker_join_token: "{{ worker_join_token_raw.stdout }}"
+        
+- name: Join worker nodes to Docker Swarm
+  hosts: docker_workers
+  become: true
+  vars:
+    swarm_manager_ip: "{{ hostvars['docker-primary01']['ansible_host'] }}"
+  tasks:
+    - name: Check current swarm state on worker
+      command: docker info --format '{{"{{"}} .Swarm.LocalNodeState {{"}}"}}'
+      register: worker_swarm_status
+      changed_when: false
+
+    - name: Debug current swarm state
+      debug:
+        msg: "Current Swarm state on worker: {{ worker_swarm_status.stdout }}"
+
+    - name: Leave any existing swarm if part of wrong cluster
+      command: docker swarm leave --force
+      when: worker_swarm_status.stdout != "inactive"
+
+    - name: Join the swarm dynamically if inactive
+      command: >
+        docker swarm join
+        --token {{ hostvars['docker-primary01']['worker_join_token'] }}
+        {{ swarm_manager_ip }}:2377
+      when: worker_swarm_status.stdout == "inactive"
+
+    - name: Confirm worker joined
+      command: docker info --format '{{"{{"}} .Swarm.LocalNodeState {{"}}"}}'
+      register: new_worker_status
+      changed_when: false
+
+    - name: Debug joined state
+      debug:
+        msg: "After join, swarm state: {{ new_worker_status.stdout }}"
 

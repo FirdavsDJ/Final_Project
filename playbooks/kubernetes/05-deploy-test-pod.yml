@@ -1,0 +1,36 @@
+---
+- name: Deploy test nginx pod on Kubernetes cluster
+  hosts: kube_master
+  become: yes
+  tasks:
+    - name: Create test pod YAML manifest
+      copy:
+        dest: /home/ansible/nginx-test-pod.yaml
+        content: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: nginx-test
+            labels:
+              app: nginx
+          spec:
+            containers:
+            - name: nginx
+              image: nginx
+              ports:
+              - containerPort: 80
+
+    - name: Apply test pod YAML manifest
+      shell: KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f /home/ansible/nginx-test-pod.yaml
+      register: apply_output
+      changed_when: "'created' in apply_output.stdout"
+
+    - name: Show kubectl apply result
+      debug:
+        var: apply_output.stdout
+
+    - name: Wait for nginx-test pod to be Ready
+      shell: KUBECONFIG=/etc/kubernetes/admin.conf kubectl wait --for=condition=Ready pod/nginx-test --timeout=60s
+      register: wait_result
+      failed_when: wait_result.rc != 0
+

@@ -1,0 +1,55 @@
+---
+- name: Deploy working echo server
+  hosts: kube-master01
+  become: true
+  tasks:
+    - name: Create echo Deployment YAML
+      copy:
+        dest: /home/ansible/echo-deployment.yaml
+        content: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: echo
+            namespace: default
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: echo
+            template:
+              metadata:
+                labels:
+                  app: echo
+              spec:
+                containers:
+                  - name: echo
+                    image: ealen/echo-server
+                    ports:
+                      - containerPort: 80
+
+    - name: Create echo Service YAML
+      copy:
+        dest: /home/ansible/echo-service.yaml
+        content: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: echo
+            namespace: default
+          spec:
+            selector:
+              app: echo
+            ports:
+              - port: 80
+                targetPort: 80
+                protocol: TCP
+            type: ClusterIP
+
+    - name: Apply echo deployment and service
+      shell: |
+        KUBECONFIG=/home/ansible/admin.conf kubectl apply -f /home/ansible/echo-deployment.yaml
+        KUBECONFIG=/home/ansible/admin.conf kubectl apply -f /home/ansible/echo-service.yaml
+      register: result
+      failed_when: result.rc != 0
+

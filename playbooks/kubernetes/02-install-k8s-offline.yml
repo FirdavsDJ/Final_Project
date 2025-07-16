@@ -1,0 +1,36 @@
+---
+- name: Download and install Kubernetes binaries offline
+  hosts: kubernetes
+  become: true
+
+  tasks:
+    - name: Ensure /usr/local/bin exists
+      file:
+        path: /usr/local/bin
+        state: directory
+        mode: '0755'
+
+    - name: Download kubeadm
+      get_url:
+        url: https://dl.k8s.io/release/v1.28.7/bin/linux/amd64/kubeadm
+        dest: /usr/local/bin/kubeadm
+        mode: '0755'
+
+    - name: Download kubelet
+      get_url:
+        url: https://dl.k8s.io/release/v1.28.7/bin/linux/amd64/kubelet
+        dest: /usr/local/bin/kubelet
+        mode: '0755'
+
+    - name: Download kubectl
+      get_url:
+        url: https://dl.k8s.io/release/v1.28.7/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: true
+        state: started
+

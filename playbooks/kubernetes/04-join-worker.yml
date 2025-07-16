@@ -1,0 +1,30 @@
+---
+- name: Join Kubernetes Worker Nodes to the Cluster
+  hosts: kube_worker
+  become: true
+
+  tasks:
+    - name: Copy join command from master
+      fetch:
+        src: /home/ansible/join_command.sh
+        dest: /tmp/
+        flat: yes
+      delegate_to: kube-master01
+
+    - name: Copy join script to worker node
+      copy:
+        src: /tmp/join_command.sh
+        dest: /tmp/join_command.sh
+        mode: '0755'
+
+    - name: Execute kubeadm join
+      command: bash /tmp/join_command.sh
+      register: join_output
+      ignore_errors: false
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: true
+        state: started
+

@@ -1,0 +1,11 @@
+---
+- name: Create custom overlay network
+  hosts: docker_primary
+  become: true
+  tasks:
+    - name: Create overlay network
+      command: docker network create --driver overlay --attachable my_overlay
+      register: overlay_result
+      failed_when: overlay_result.rc not in [0,1]
+      changed_when: "'already exists' not in overlay_result.stderr"
+

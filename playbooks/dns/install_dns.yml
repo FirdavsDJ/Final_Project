@@ -38,13 +38,19 @@
               allow-update { none; };
           };
 
+          zone "86.168.192.in-addr.arpa" IN {
+              type master;
+              file "86.168.192.db";
+              allow-update { none; };
+          };
+
     - name: Create forward zone file
       copy:
         dest: /var/named/ziyotek3.local.db
         content: |
           $TTL 86400
           @   IN  SOA dns01. admin.ziyotek3.local. (
-                  2025070301 ; Serial
+                  2025070401 ; Serial
                   3600       ; Refresh
                   1800       ; Retry
                   604800     ; Expire
@@ -52,13 +58,47 @@
 
               IN  NS  dns01.
 
-          dns01      IN A 192.168.86.22
-          web01      IN A 192.168.86.12
-          web02      IN A 192.168.86.13
-          web03      IN A 192.168.86.14
-          db01       IN A 192.168.86.11
-          haproxy01  IN A 192.168.86.15
-          ansible01  IN A 192.168.86.17
+          dns01           IN A 192.168.86.22
+          ansible01       IN A 192.168.86.17
+          web01           IN A 192.168.86.12
+          web02           IN A 192.168.86.13
+          web03           IN A 192.168.86.14
+          db01            IN A 192.168.86.11
+          haproxy01       IN A 192.168.86.15
+          nagios01        IN A 192.168.86.16
+          docker-primary01 IN A 192.168.86.18
+          docker-worker01  IN A 192.168.86.19
+          docker-worker02  IN A 192.168.86.20
+          kube-master01    IN A 192.168.86.21
+          kube-worker01    IN A 192.168.86.23
+
+    - name: Create reverse zone file
+      copy:
+        dest: /var/named/86.168.192.db
+        content: |
+          $TTL 86400
+          @   IN  SOA dns01. admin.ziyotek3.local. (
+                  2025070401 ; Serial
+                  3600       ; Refresh
+                  1800       ; Retry
+                  604800     ; Expire
+                  86400 )    ; Minimum TTL
+
+              IN  NS  dns01.
+
+          11 IN PTR db01.ziyotek3.local.
+          12 IN PTR web01.ziyotek3.local.
+          13 IN PTR web02.ziyotek3.local.
+          14 IN PTR web03.ziyotek3.local.
+          15 IN PTR haproxy01.ziyotek3.local.
+          16 IN PTR nagios01.ziyotek3.local.
+          17 IN PTR ansible01.ziyotek3.local.
+          18 IN PTR docker-primary01.ziyotek3.local.
+          19 IN PTR docker-worker01.ziyotek3.local.
+          20 IN PTR docker-worker02.ziyotek3.local.
+          21 IN PTR kube-master01.ziyotek3.local.
+          22 IN PTR dns01.ziyotek3.local.
+          23 IN PTR kube-worker01.ziyotek3.local.
 
     - name: Restore SELinux contexts
       command: restorecon -Rv /var/named

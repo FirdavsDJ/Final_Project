@@ -1,0 +1,7 @@
+---
+- name: Monitor Kubernetes echo app from Nagios
+  hosts: nagios
+  become: true
+  roles:
+    - role: kubernetes/nagios_echo_monitor
+
